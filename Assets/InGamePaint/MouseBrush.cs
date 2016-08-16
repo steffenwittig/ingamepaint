@@ -22,23 +22,19 @@ namespace InGamePaint
         /// <summary>
         /// Controls how dense should brush tips be painted when moving the brush
         /// </summary>
-        public int brushDensity = 5;
+        public float brushFlow = 1;
 
         /// <summary>
         /// Alpha texture of the brush
         /// </summary>
         public Texture2D brushTip;
 
-        /// <summary>
-        /// Color of the brush
-        /// </summary>
-        public Color color = Color.black;
-
+        protected Color color = Color.black;
         protected Texture2D brushColorTexture, brushAlphaOriginal;
-
         protected Paintable currentPaintable, lastPaintable;
         protected Vector2 currentPaintableCoords, lastPaintableCoords;
         protected bool paintedLastFrame = false;
+        protected Renderer colorDisplayRenderer;
 
         protected void Start()
         {
@@ -49,6 +45,14 @@ namespace InGamePaint
             }
 
             brushAlphaOriginal = brushTip;
+
+            GameObject colorDisplay = GameObject.Find("BrushColor");
+            if (colorDisplay != null)
+            {
+                colorDisplayRenderer = colorDisplay.GetComponent<Renderer>();
+            }
+
+            ApplyColor();
         }
 
         protected void Update()
@@ -72,6 +76,15 @@ namespace InGamePaint
                     // Rick click: pick color
                     SetColor(currentPaintable.PickColor(currentPaintableCoords, 1f));
                 }
+
+            }
+
+            // control opacity with mouse wheel
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (scroll != 0)
+            {
+                color.a = Mathf.Min(1, Mathf.Max(0, color.a + scroll / 2));
+                ApplyColor();
             }
         }
 
@@ -79,6 +92,24 @@ namespace InGamePaint
         {
             this.color = color;
             brushColorTexture = null;
+            ApplyColor();
+        }
+
+        protected void ApplyColor()
+        {
+            brushColorTexture = new Texture2D(brushSize, brushSize);
+            Color[] pixels = new Color[brushSize * brushSize];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = color;
+            }
+            brushColorTexture.SetPixels(pixels);
+            brushColorTexture.Apply();
+
+            if (colorDisplayRenderer != null)
+            {
+                colorDisplayRenderer.material.mainTexture = brushColorTexture;
+            }
         }
 
         protected void UpdatePaintableCoords()
@@ -109,29 +140,38 @@ namespace InGamePaint
         protected void Paint()
         {
 
-            if (paintedLastFrame && currentPaintable == lastPaintable && lastPaintableCoords != currentPaintableCoords)
+            bool painted = false;
+
+            if (paintedLastFrame && currentPaintable == lastPaintable)
             {
                 // paint interpolated brush tips between the last painted coords and the current cords
                 float distance = Vector2.Distance(lastPaintableCoords, currentPaintableCoords);
-                int paintTips = Mathf.RoundToInt(distance * brushDensity / brushSize * 2);
+                int paintTips = Mathf.RoundToInt(distance * Mathf.Min(brushFlow,1) / brushSize * 4);
                 if (paintTips > 0)
                 {
                     Vector2[] tipPositions = new Vector2[paintTips - 1]; // -1 because we won't need the first position, as it was already painted last frame
                     for (int i = 1; i <= paintTips; i++)
                     {
                         PaintTexture(Vector2.Lerp(lastPaintableCoords, currentPaintableCoords, (float)i/paintTips));
+                        painted = true;
                     }
-                } else
-                {
-                    PaintTexture(currentPaintableCoords);
                 }
-            } else
+            }
+
+            Debug.Log(lastPaintableCoords);
+
+            if (!painted && (!paintedLastFrame || currentPaintableCoords != lastPaintableCoords))
             {
-                // paint a brush tip at the current coords
-                PaintTexture(currentPaintableCoords);
+                // paint a single brush tip at the current coords if we didn't paint at that position last frame
+                PaintTexture();
             }
 
             paintedLastFrame = true;
+        }
+
+        protected void PaintTexture()
+        {
+            PaintTexture(currentPaintableCoords);
         }
 
         protected void PaintTexture(Vector2 coords)
@@ -142,17 +182,6 @@ namespace InGamePaint
                 brushTip = new Texture2D(brushAlphaOriginal.width, brushAlphaOriginal.height);
                 brushTip.SetPixels(brushAlphaOriginal.GetPixels());
                 TextureScale.Bilinear(brushTip, brushSize, brushSize);
-            }
-
-            if (brushColorTexture == null)
-            {
-                brushColorTexture = new Texture2D(brushSize, brushSize);
-                Color[] pixels = new Color[brushSize * brushSize];
-                for (int i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i] = color;
-                }
-                brushColorTexture.SetPixels(pixels);
             }
 
             currentPaintable.PaintTexture(coords, brushTip, brushColorTexture);

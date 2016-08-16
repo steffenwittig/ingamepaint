@@ -89,11 +89,11 @@ namespace InGamePaint
         /// <summary>
         /// Paint a single pixel
         /// </summary>
-        /// <param name="uvCoords"></param>
+        /// <param name="coords"></param>
         /// <param name="color">Color of the pixel</param>
-        public void PaintPixel(Vector2 uvCoords, Color color)
+        public void PaintPixel(Vector2 coords, Color color)
         {
-            PaintPixel(Mathf.RoundToInt(uvCoords.x * resolutionX), Mathf.RoundToInt(uvCoords.y * resolutionY), color);
+            PaintPixel(Mathf.RoundToInt(coords.x * resolutionX), Mathf.RoundToInt(coords.y * resolutionY), color);
         }
 
         /// <summary>
@@ -176,22 +176,22 @@ namespace InGamePaint
         /// <summary>
         /// Paint a texture
         /// </summary>
-        /// <param name="uvCoordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
+        /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
         /// <param name="texture">Texture that will be painted</param>
-        public void PaintTexture(Vector2 uvCoordsCenter, Texture2D texture)
+        public void PaintTexture(Vector2 coordsCenter, Texture2D texture)
         {
-            PaintTexture(uvCoordsCenter, texture, texture);
+            PaintTexture(coordsCenter, texture, texture);
         }
 
         /// <summary>
         /// Paint a texture with specific alpha and color components
         /// </summary>
-        /// <param name="uvCoordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
+        /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
         /// <param name="colorTexture">Color component of the texture</param>
-        public void PaintTexture(Vector2 uvCoordsCenter, Texture2D alphaTexture, Texture2D colorTexture)
+        public void PaintTexture(Vector2 coordsCenter, Texture2D alphaTexture, Texture2D colorTexture)
         {
-            PaintTexture(Mathf.RoundToInt(uvCoordsCenter.x * resolutionX), Mathf.RoundToInt(uvCoordsCenter.y * resolutionY), alphaTexture, colorTexture);
+            PaintTexture(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y), alphaTexture, colorTexture);
         }
 
         /// <summary>
@@ -216,13 +216,18 @@ namespace InGamePaint
         /// <summary>
         /// Pick color in specified radius. If radius is larger than 1 pixel, an average color of all pixels will be picked
         /// </summary>
-        /// <param name="uvCoordsCenter">Center of the color picking radius</param>
+        /// <param name="coordsCenter">Center of the color picking radius</param>
         /// <param name="radius">Not yet implemented</param>
         /// <returns></returns>
-        public Color PickColor(Vector2 uvCoordsCenter, float radius)
+        public Color PickColor(Vector2 coordsCenter, float radius)
         {
             // TODO: implement radius
-            return texture.GetPixel(Mathf.RoundToInt(uvCoordsCenter.x * resolutionX), Mathf.RoundToInt(uvCoordsCenter.y * resolutionY));
+            return texture.GetPixel(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y));
+        }
+
+        public Vector2 Uv2Pixel(Vector2 uvCoords)
+        {
+            return new Vector2(uvCoords.x * resolutionX, uvCoords.y * resolutionY);
         }
     }
 

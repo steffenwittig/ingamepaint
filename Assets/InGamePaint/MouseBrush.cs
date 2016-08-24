@@ -212,7 +212,6 @@ namespace InGamePaint
                 // paint interpolated brush tips between the last painted coords and the current cords
                 float distance = Vector2.Distance(lastPaintableCoords, currentPaintableCoords);
                 int paintTips = Mathf.RoundToInt(distance / brushSize / brushSpacing);
-                Debug.Log(paintTips);
                 if (paintTips > 0)
                 {
                     Vector2[] tipPositions = new Vector2[paintTips - 1]; // -1 because we won't need the first position, as it was already painted last frame

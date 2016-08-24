@@ -160,9 +160,15 @@ namespace InGamePaint
                 for (int i = 0; i < alphaTexturePixels.Length; i++)
                 {
                     float alpha = alphaTexturePixels[i].a * colorTexturePixels[i].a;
-                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, colorTexturePixels[i].r, alpha);
-                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, colorTexturePixels[i].g, alpha);
-                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, colorTexturePixels[i].b, alpha);
+                    float colorMix = alpha;
+                    // if the pixel is fully transparent, colorMix will be at least 0.5
+                    //if (sourcePixels[i].a == 0)
+                    //{
+                    colorMix = Mathf.Min(1, colorMix / sourcePixels[i].a);
+                    //}
+                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, colorTexturePixels[i].r, colorMix);
+                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, colorTexturePixels[i].g, colorMix);
+                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, colorTexturePixels[i].b, colorMix);
                     paintPixels[i].a = sourcePixels[i].a + alpha;
                 }
                 Texture2D paintTexture = new Texture2D(brushWidth, brushHeight);

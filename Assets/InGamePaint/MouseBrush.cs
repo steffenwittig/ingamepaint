@@ -142,7 +142,7 @@ namespace InGamePaint
             {
                 GUI.Label(
                     new Rect(0, 0, Screen.width, Screen.height),
-                    "InGamePaint Mouse Brush:\nH: Toggle Help\nLeft-Click: Paint\nRight-Click: Pick Color\nMouse-Wheel: Opacity\nMouse-Wheel+Shift:Size");
+                    "InGamePaint Mouse Brush:\nH: Toggle Help\nLeft-Click: Paint\nRight-Click: Pick Color\nMouse-Wheel: Opacity\nMouse-Wheel+Shift:Size\nS: Save");
             }
         }
 

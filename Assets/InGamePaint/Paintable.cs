@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.IO;
 
 namespace InGamePaint
 {
@@ -35,6 +36,16 @@ namespace InGamePaint
         /// </summary>
         public bool locked = false;
 
+        protected bool changed, hasUnsavedChanges;
+
+        public bool HasUnsavedChanges
+        {
+            get
+            {
+                return hasUnsavedChanges;
+            }
+        }
+
         protected Texture2D texture;
 
         /// <summary>
@@ -43,6 +54,7 @@ namespace InGamePaint
         protected void Start()
         {
             Material material = GetComponent<Renderer>().material;
+
             if (material.mainTexture == null)
             {
                 texture = new Texture2D(resolutionX, resolutionY);
@@ -56,9 +68,11 @@ namespace InGamePaint
                 texture = new Texture2D(resolutionX, resolutionY);
                 texture.SetPixels(((Texture2D)material.mainTexture).GetPixels());
                 material.mainTexture = texture;
-                
             }
             GetComponent<MeshCollider>().sharedMesh = GetComponent<MeshFilter>().sharedMesh;
+
+            changed = true;
+            hasUnsavedChanges = false;
         }
 
         /// <summary>
@@ -66,9 +80,10 @@ namespace InGamePaint
         /// </summary>
         protected void Update()
         {
-            if (texture != null)
+            if (texture != null && changed)
             {
                 texture.Apply();
+                changed = false;
             }
         }
 
@@ -84,6 +99,8 @@ namespace InGamePaint
             {
                 texture.SetPixel(x, y, color);
             }
+            hasUnsavedChanges = true;
+            changed = true;
         }
 
         /// <summary>
@@ -176,6 +193,9 @@ namespace InGamePaint
 
                 // add paint texture to canvas texture
                 Graphics.CopyTexture(paintTexture, 0, 0, 0, 0, brushWidth, brushHeight, texture, 0, 0, x, y);
+
+                hasUnsavedChanges = true;
+                changed = true;
             }
         }
 
@@ -216,6 +236,8 @@ namespace InGamePaint
                 }
 
                 texture.SetPixels(col);
+                changed = true;
+                hasUnsavedChanges = true;
             }
         }
 
@@ -235,6 +257,14 @@ namespace InGamePaint
         {
             return new Vector2(uvCoords.x * resolutionX, uvCoords.y * resolutionY);
         }
+
+        public string SaveToFile()
+        {
+            string path = Application.persistentDataPath + "/" + name + "_" + DateTime.Now.ToString("MM-dd-yyyy-hh-mm") + ".png";
+            File.WriteAllBytes(path, texture.EncodeToPNG());
+            return path;
+        }
+
     }
 
 }

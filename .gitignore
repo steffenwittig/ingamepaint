@@ -28,3 +28,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Ignore SteamVR and SteamVR_Unity_Toolkit Asset Store Packages
+/Assets/SteamVR*

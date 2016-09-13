@@ -1,25 +1,27 @@
 ﻿using UnityEngine;
-using System.Collections;
+using VRTK;
 
 namespace InGamePaint
 {
+    [RequireComponent(typeof(SteamVR_TrackedObject))]
+    [RequireComponent(typeof(VRTK_ControllerEvents))]
     /// <summary>
     /// Interacts with a Paintable GameObject like a traditional mouse-based brush
     /// </summary>
-    public class MouseBrush : MonoBehaviour
+    public class VrBrush : MonoBehaviour
     {
 
         /// <summary>
         /// How far away can Paintable GameObjects be painted
         /// </summary>
-        public float paintDistance = 100f;
+        public float paintDistance = 0.5f;
 
         /// <summary>
         /// Alpha texture of the brush
         /// </summary>
         public Texture2D brushTip;
 
-        protected int brushSize = 32;
+        protected int brushSize = 128, paintBrushSize;
         protected float brushSpacing = 0.3f;
         protected Color color = Color.black;
         protected Texture2D brushColorTexture, brushAlphaOriginal;
@@ -28,6 +30,11 @@ namespace InGamePaint
         protected Vector3 shapeDisplayInitScale;
         protected Renderer colorDisplayRenderer, shapeDisplayRenderer;
         protected bool paintedLastFrame = false, showHelp = true;
+        protected float currentPaintableDistance;
+
+        protected LineRenderer lineRenderer;
+
+        public Material tipMaterial;
 
         public Color BrushColor
         {
@@ -69,7 +76,14 @@ namespace InGamePaint
             set
             {
                 brushSize = Mathf.Max(value, 1);
-                ApplyBrushSettings();
+            }
+        }
+
+        public int PaintBrushSize
+        {
+            get
+            {
+                return Mathf.Max(1, Mathf.RoundToInt((1 - currentPaintableDistance / paintDistance) * BrushSize));
             }
         }
 
@@ -83,19 +97,24 @@ namespace InGamePaint
 
             brushAlphaOriginal = brushTip;
 
-            GameObject colorDisplay = GameObject.Find("BrushColor");
-            if (colorDisplay != null)
+            if (GetComponent<VRTK_ControllerEvents>() == null)
             {
-                colorDisplayRenderer = colorDisplay.GetComponent<Renderer>();
-            }
-            GameObject shapeDisplay = GameObject.Find("BrushShape");
-            if (shapeDisplay != null)
-            {
-                shapeDisplayRenderer = shapeDisplay.GetComponent<Renderer>();
-                shapeDisplayInitScale = shapeDisplay.transform.localScale;
+                Debug.LogError("VRTK_ControllerEvents_ListenerExample is required to be attached to a SteamVR Controller that has the VRTK_ControllerEvents script attached to it");
+                return;
             }
 
+            //Setup controller event listeners
+            GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
+
+            lineRenderer = gameObject.AddComponent<LineRenderer>();
+            lineRenderer.material = tipMaterial;
+            lineRenderer.SetPositions(new Vector3[] { Vector3.zero, Vector3.forward * paintDistance });
+            lineRenderer.SetWidth(0.05f, 0);
+            lineRenderer.useWorldSpace = false;
+
             ApplyBrushSettings();
+
+
         }
 
         protected void Update()
@@ -103,23 +122,10 @@ namespace InGamePaint
 
             UpdatePaintableCoords();
 
-            if (currentPaintable != null)
+            if(GetComponent<VRTK_ControllerEvents>().GetTriggerAxis() >= 0.1f)
             {
-                if (Input.GetMouseButton(0))
-                {
-                    // Left click
-                    Paint();
-                } else
-                {
-                    paintedLastFrame = false;
-                }
-
-                if (Input.GetMouseButton(1))
-                {
-                    // Rick click
-                    BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1f);
-                }
-
+                BrushOpacity = GetComponent<VRTK_ControllerEvents>().GetTriggerAxis();
+                Paint();
             }
 
             // control opacity or size with mouse wheel
@@ -136,34 +142,26 @@ namespace InGamePaint
             }
         }
 
-        protected void OnGUI()
-        {
-            if (showHelp)
-            {
-                GUI.Label(
-                    new Rect(0, 0, Screen.width, Screen.height),
-                    "InGamePaint Mouse Brush:\nH: Toggle Help\nLeft-Click: Paint\nRight-Click: Pick Color\nMouse-Wheel: Opacity\nMouse-Wheel+Shift:Size\nS: Save");
-            }
-        }
-
         protected void ApplyBrushSettings()
         {
             // Clone and scale texture
-            if (brushTip.width != brushSize)
+            if (brushTip.width != PaintBrushSize)
             {
                 brushTip = new Texture2D(brushAlphaOriginal.width, brushAlphaOriginal.height);
                 brushTip.SetPixels(brushAlphaOriginal.GetPixels());
-                TextureScale.Bilinear(brushTip, brushSize, brushSize);
+                TextureScale.Bilinear(brushTip, PaintBrushSize, PaintBrushSize);
             }
 
-            brushColorTexture = new Texture2D(brushSize, brushSize);
-            Color[] pixels = new Color[brushSize * brushSize];
+            brushColorTexture = new Texture2D(PaintBrushSize, PaintBrushSize);
+            Color[] pixels = new Color[PaintBrushSize * PaintBrushSize];
             for (int i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = color;
             }
             brushColorTexture.SetPixels(pixels);
             brushColorTexture.Apply();
+            Debug.Log("new color");
+            lineRenderer.SetColors(color, color);
 
             if (colorDisplayRenderer != null)
             {
@@ -172,7 +170,7 @@ namespace InGamePaint
             if (shapeDisplayRenderer != null)
             {
                 shapeDisplayRenderer.material.mainTexture = brushTip;
-                shapeDisplayRenderer.transform.localScale = brushSize * shapeDisplayInitScale / 128;
+                shapeDisplayRenderer.transform.localScale = PaintBrushSize * shapeDisplayInitScale / 128;
             }
 
         }
@@ -183,7 +181,8 @@ namespace InGamePaint
             lastPaintableCoords = currentPaintableCoords;
 
             RaycastHit hit;
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            GameObject source = GameObject.Find("Model");
+            Ray ray = new Ray(source.transform.position, source.transform.forward);
             Debug.DrawRay(transform.position, ray.direction * paintDistance, Color.yellow, 0.2f, false);
 
             Paintable hitPaintable = null;
@@ -194,6 +193,7 @@ namespace InGamePaint
             }
 
             if (hitPaintable != null) {
+                currentPaintableDistance = hit.distance;
                 currentPaintable = hitPaintable;
                 currentPaintableCoords = currentPaintable.Uv2Pixel(hit.textureCoord);
             } else
@@ -211,7 +211,7 @@ namespace InGamePaint
             {
                 // paint interpolated brush tips between the last painted coords and the current cords
                 float distance = Vector2.Distance(lastPaintableCoords, currentPaintableCoords);
-                int paintTips = Mathf.RoundToInt(distance / brushSize / brushSpacing);
+                int paintTips = Mathf.RoundToInt(distance / PaintBrushSize / brushSpacing);
                 if (paintTips > 0)
                 {
                     for (int i = 1; i <= paintTips; i++)
@@ -241,6 +241,12 @@ namespace InGamePaint
         {
             currentPaintable.PaintTexture(coords, brushTip, brushColorTexture);
         }
+
+        private void TouchpadPressed(object sender, ControllerInteractionEventArgs e)
+        {
+            BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1f);
+        }
+        
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace InGamePaint
 {
@@ -9,13 +10,10 @@ namespace InGamePaint
     {
 
         /// <summary>
-        /// How far away can Paintable GameObjects be painted
+        /// Initialize color and shape display fields
         /// </summary>
-        new protected float paintDistance = 100f;
-
         new protected void Start()
         {
-
             brushSize = 32;
 
             base.Start();
@@ -35,6 +33,9 @@ namespace InGamePaint
             ApplyBrushSettings();
         }
 
+        /// <summary>
+        /// React to mouse input
+        /// </summary>
         protected void Update()
         {
 
@@ -68,11 +69,14 @@ namespace InGamePaint
                     BrushOpacity += scroll / 2;
                 } else
                 {
-                    BrushSize += Mathf.RoundToInt(scroll*25);
+                    MaxBrushSize += Mathf.RoundToInt(scroll*25);
                 }
             }
         }
 
+        /// <summary>
+        /// Show help
+        /// </summary>
         protected void OnGUI()
         {
             if (showHelp)
@@ -83,7 +87,10 @@ namespace InGamePaint
             }
         }
 
-        new protected void ApplyBrushSettings()
+        /// <summary>
+        /// Update color and shape display fields
+        /// </summary>
+        override protected void ApplyBrushSettings()
         {
             base.ApplyBrushSettings();
 
@@ -94,10 +101,25 @@ namespace InGamePaint
             if (shapeDisplayRenderer != null)
             {
                 shapeDisplayRenderer.material.mainTexture = brushTip;
-                shapeDisplayRenderer.transform.localScale = PaintBrushSize * shapeDisplayInitScale / 128;
+                shapeDisplayRenderer.transform.localScale = DynamicBrushSize * shapeDisplayInitScale / 128;
             }
         }
 
+        /// <summary>
+        /// Return ray distance
+        /// </summary>
+        protected override float RayDistance
+        {
+            get
+            {
+                return 100f;
+            }
+        }
+
+        /// <summary>
+        /// Return the position of the cursor as a Ray
+        /// </summary>
+        /// <returns></returns>
         override protected Ray GetRay()
         {
             return Camera.main.ScreenPointToRay(Input.mousePosition);

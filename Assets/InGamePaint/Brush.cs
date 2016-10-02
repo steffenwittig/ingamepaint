@@ -7,17 +7,12 @@ namespace InGamePaint
     {
 
         /// <summary>
-        /// How far away can Paintable GameObjects be painted
-        /// </summary>
-        protected float paintDistance = 100f;
-
-        /// <summary>
         /// Alpha texture of the brush
         /// </summary>
         public Texture2D brushTip;
 
-        protected int brushSize = 32;
-        protected float brushSpacing = 0.3f;
+        protected int brushSize;
+        protected float brushSpacing = 0.3f, currentPaintableDistance;
         protected Color color = Color.black;
         protected Texture2D brushColorTexture, brushAlphaOriginal;
         protected Paintable currentPaintable, lastPaintable;
@@ -26,6 +21,9 @@ namespace InGamePaint
         protected Renderer colorDisplayRenderer, shapeDisplayRenderer;
         protected bool paintedLastFrame = false, showHelp = true;
 
+        /// <summary>
+        /// Initialize brush textures
+        /// </summary>
         protected virtual void Start()
         {
             if (brushTip == null)
@@ -37,18 +35,21 @@ namespace InGamePaint
             brushAlphaOriginal = brushTip;
         }
 
-        protected virtual void ApplyBrushSettings()
+        /// <summary>
+        /// Create new brush texture, after new color and/or opacity values were set
+        /// </summary>
+        virtual protected void ApplyBrushSettings()
         {
             // Clone and scale texture
-            if (brushTip.width != PaintBrushSize)
+            if (brushTip.width != DynamicBrushSize)
             {
                 brushTip = new Texture2D(brushAlphaOriginal.width, brushAlphaOriginal.height);
                 brushTip.SetPixels(brushAlphaOriginal.GetPixels());
-                TextureScale.Bilinear(brushTip, PaintBrushSize, PaintBrushSize);
+                TextureScale.Bilinear(brushTip, DynamicBrushSize, DynamicBrushSize);
             }
 
-            brushColorTexture = new Texture2D(PaintBrushSize, PaintBrushSize);
-            Color[] pixels = new Color[PaintBrushSize * PaintBrushSize];
+            brushColorTexture = new Texture2D(DynamicBrushSize, DynamicBrushSize);
+            Color[] pixels = new Color[DynamicBrushSize * DynamicBrushSize];
             for (int i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = color;
@@ -57,6 +58,9 @@ namespace InGamePaint
             brushColorTexture.Apply();
         }
 
+        /// <summary>
+        /// Set the paintable object and UV coordinates
+        /// </summary>
         protected void UpdatePaintableCoords()
         {
             lastPaintable = currentPaintable;
@@ -64,17 +68,18 @@ namespace InGamePaint
 
             RaycastHit hit;
             Ray ray = GetRay();
-            Debug.DrawRay(transform.position, ray.direction * paintDistance, Color.yellow, 0.2f, false);
+            Debug.DrawRay(transform.position, ray.direction * RayDistance, Color.yellow, 0.2f, false);
 
             Paintable hitPaintable = null;
 
-            if (Physics.Raycast(ray, out hit, paintDistance))
+            if (Physics.Raycast(ray, out hit, RayDistance))
             {
                 hitPaintable = hit.collider.gameObject.GetComponent<Paintable>();
             }
 
             if (hitPaintable != null)
             {
+                currentPaintableDistance = hit.distance;
                 currentPaintable = hitPaintable;
                 currentPaintableCoords = currentPaintable.Uv2Pixel(hit.textureCoord);
             }
@@ -84,6 +89,9 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Paint at the current UV coordinates on a paintable
+        /// </summary>
         protected void Paint()
         {
 
@@ -93,7 +101,7 @@ namespace InGamePaint
             {
                 // paint interpolated brush tips between the last painted coords and the current cords
                 float distance = Vector2.Distance(lastPaintableCoords, currentPaintableCoords);
-                int paintTips = Mathf.RoundToInt(distance / PaintBrushSize / brushSpacing);
+                int paintTips = Mathf.RoundToInt(distance / DynamicBrushSize / brushSpacing);
                 if (paintTips > 0)
                 {
                     for (int i = 1; i <= paintTips; i++)
@@ -114,16 +122,26 @@ namespace InGamePaint
             paintedLastFrame = painted;
         }
 
+        /// <summary>
+        /// Paint a texture at the current UV coordinates on a paintable
+        /// </summary>
         protected void PaintTexture()
         {
             PaintTexture(currentPaintableCoords);
         }
 
+        /// <summary>
+        /// Paint a texture at the specified coordinates on a paintable
+        /// </summary>
+        /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
         {
             currentPaintable.PaintTexture(coords, brushTip, brushColorTexture);
         }
 
+        /// <summary>
+        /// The color that the brush will apply on paintables
+        /// </summary>
         public Color BrushColor
         {
             get
@@ -142,6 +160,9 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// The opacity of the brush color
+        /// </summary>
         public float BrushOpacity
         {
             get
@@ -155,20 +176,27 @@ namespace InGamePaint
             }
         }
 
-        public int BrushSize
+        /// <summary>
+        /// Set size of the brush in pixels
+        /// </summary>
+        public int MaxBrushSize
         {
-            get
-            {
-                return brushSize;
-            }
             set
             {
                 brushSize = Mathf.Max(value, 1);
                 ApplyBrushSettings();
             }
+            get
+            {
+                return brushSize;
+            }
         }
 
-        public int PaintBrushSize
+        /// <summary>
+        /// Get the size of the brush in pixels, can be overridden in child classes
+        /// to return dynamic brush sizes
+        /// </summary>
+        virtual public int DynamicBrushSize
         {
             get
             {
@@ -176,6 +204,18 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Determines how far rays will be cast to detect the position of the brush on a Paintable object
+        /// </summary>
+        abstract protected float RayDistance
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Returns a ray, depending on the nature of the brush
+        /// </summary>
+        /// <returns></returns>
         abstract protected Ray GetRay();
     }
 }

@@ -6,7 +6,6 @@ namespace InGamePaint
 {
 
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(MeshCollider))]
     [RequireComponent(typeof(MeshFilter))]
 
     /// <summary>
@@ -69,7 +68,8 @@ namespace InGamePaint
                 texture.SetPixels(((Texture2D)material.mainTexture).GetPixels());
                 material.mainTexture = texture;
             }
-            GetComponent<MeshCollider>().sharedMesh = GetComponent<MeshFilter>().sharedMesh;
+            MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
+            meshCollider.sharedMesh = GetComponent<MeshFilter>().sharedMesh;
 
             changed = true;
             hasUnsavedChanges = false;

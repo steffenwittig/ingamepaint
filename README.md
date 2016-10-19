@@ -25,6 +25,7 @@ Open Assets/InGamePaint/Examples/PlanceCanvas.unity. The instructions will be di
 
 - eraser
 - undo
+- scale canvas
 
 # Current Problems
 

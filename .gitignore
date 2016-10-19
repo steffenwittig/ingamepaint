@@ -31,3 +31,4 @@ sysinfo.txt
 
 # Ignore SteamVR and SteamVR_Unity_Toolkit Asset Store Packages
 /Assets/SteamVR*
+/Assets/VRTK*

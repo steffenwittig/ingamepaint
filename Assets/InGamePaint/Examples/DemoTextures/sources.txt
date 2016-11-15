@@ -1,0 +1,6 @@
+The textures in this folder were downloaded from opengameart.org
+
+"hardwood" by bart: http://opengameart.org/node/11950
+"hardwood normal" by wulax: http://opengameart.org/content/tiling-hardwood-floor-texture-1024x1024-hardwoodjpg-normal-map
+"wood 2" by JCW: http://opengameart.org/content/wood-texture-tiles
+All textures in the folder "cloudy" by spiney: http://opengameart.org/content/cloudy-skyboxes

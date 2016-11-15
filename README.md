@@ -6,9 +6,11 @@ The project is currently being developed as a project at Reutlingen University a
 
 Demonstration: [https://youtu.be/uFFpBnFXw7s](https://youtu.be/uFFpBnFXw7s)
 
-# "Installation"
+# Installation
 
-- Clone this repository and open the resulting folder with Unity
+- Clone this repository and open the resulting folder in Unity
+- Install the SteamVR Plugin: https://www.assetstore.unity3d.com/en/#!/content/32647
+- Install the VRTK - SteamVR Unity Toolkit: https://www.assetstore.unity3d.com/en/#!/content/64131
 
 # Painting with a mouse
 
@@ -16,10 +18,8 @@ Open Assets/InGamePaint/Examples/PlanceCanvas.unity. The instructions will be di
 
 # Painting with an HTC Vive
 
-- Install the SteamVR Plugin: https://www.assetstore.unity3d.com/en/#!/content/32647
-- Install the VRTK - SteamVR Unity Toolkit: https://www.assetstore.unity3d.com/en/#!/content/64131
-- Go to Edit > Project Settings > Player and in the "PC, Mac & Linux Standalone" Tab. Look for "Other Settings" and "Virtual Reality SDKs". Move the OpenVR SDK to the top of the list.
-- Open Assets/InGamePaint/Examples/VrPlanceCanvas.unity and run the scene. One controller will hold a palette, the other will be your brush (it has a little triangular brush tip at the front). Paint by pulling the trigger and pick colors by clicking on the trackpad.
+- Go to Edit > Project Settings > Player and expand the the "PC, Mac & Linux Standalone" Tab. Look for "Other Settings" and "Virtual Reality SDKs". Move the OpenVR SDK to the top of the list.
+- Open Assets/InGamePaint/Examples/VrPlanceCanvas.unity and run the scene. One controller will hold a palette, the other will be your brush (it has a little triangular brush tip at the front). Instructions are pinned to the palette.
 
 # Missing features (TODO)
 
@@ -29,5 +29,5 @@ Open Assets/InGamePaint/Examples/PlanceCanvas.unity. The instructions will be di
 
 # Current Problems
 
-- drops frames, when large portions of the textures are updated (texture manipulation is currently running on the main Unity thread)
+- drops frames, when large portions of the textures are updated (texture manipulation is currently running on the main Unity thread, the Unity API cannot be accessed outside the main thread, though...)
 - VR: jiggly lines when the tracking of the controller isn't precise enough for a frame or two

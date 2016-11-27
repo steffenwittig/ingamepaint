@@ -45,8 +45,6 @@ namespace InGamePaint
                 // VRTK_InteractGrab has added a rigidbody, so we have to remove all MeshCollider now (Unity has displayed an error message, though)
                 foreach (MeshCollider meshCollider in GetComponentsInChildren<MeshCollider>())
                 {
-                    Mesh tempMesh = meshCollider.sharedMesh;
-                    PhysicMaterial tempMaterial = meshCollider.sharedMaterial;
                     RemovedColliders.Push(meshCollider.gameObject);
                     Destroy(meshCollider);
                 }
@@ -58,15 +56,13 @@ namespace InGamePaint
                     // grip was released this frame -> remove the rigidbody
                     Destroy(MoveableRigidbody);
                 }
-                else if (RemovedColliders.Count > 0)
+                else if (RemovedColliders != null && RemovedColliders.Count > 0)
                 {
                     // rigidbody was release last frame -> add colliders to children again
                     foreach (GameObject go in RemovedColliders.ToArray())
                     {
                         MeshCollider newMeshCollider = go.AddComponent<MeshCollider>();
                         // TODO: store and reset correct materials and meshes
-                        //newMeshCollider.sharedMaterial = tempMaterial;
-                        //newMeshCollider.sharedMesh = tempMesh;
                     }
                     RemovedColliders.Clear();
                 }

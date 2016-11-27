@@ -29,6 +29,8 @@ namespace InGamePaint
         /// </summary>
         protected LineRenderer lineRenderer;
 
+        private float buttonPressure;
+
         /// <summary>
         /// Return brush size based on distance to the paintable
         /// </summary>
@@ -58,12 +60,12 @@ namespace InGamePaint
 
             //Setup controller event listeners
             GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
-
+            GetComponent<VRTK_ControllerEvents>().TriggerAxisChanged += new ControllerInteractionEventHandler(TriggerChanged);
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.SetPositions(new Vector3[] { Vector3.zero, GetRay().direction * RayDistance });
             lineRenderer.SetWidth(0.05f, 0);
             lineRenderer.useWorldSpace = false;
-            lineRenderer.material = new Material(Shader.Find("Standard"));
+            lineRenderer.material = new Material(Shader.Find("Unlit/Color"));
             lineRenderer.material.color = BrushColor;
 
             ApplyBrushSettings();
@@ -78,29 +80,14 @@ namespace InGamePaint
 
             UpdatePaintableCoords();
 
-            if (currentPaintable != null)
+            if (buttonPressure >= 0.1f && currentPaintable != null)
             {
-                if (GetComponent<VRTK_ControllerEvents>().GetTriggerAxis() >= 0.1f)
-                {
-                    float pulseStrength = (1 - currentPaintableDistance / RayDistance) * maxPulseStrength;
-                    GetComponent<VRTK_ControllerActions>().TriggerHapticPulse((ushort)pulseStrength);
-                    BrushOpacity = GetComponent<VRTK_ControllerEvents>().GetTriggerAxis();
-                    Paint();
-                }
+                float pulseStrength = (1 - currentPaintableDistance / RayDistance) * maxPulseStrength;
+                GetComponent<VRTK_ControllerActions>().TriggerHapticPulse((ushort)pulseStrength);
+                BrushOpacity = buttonPressure;
+                Paint();
             }
 
-            // control opacity or size with mouse wheel
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (scroll != 0)
-            {
-                if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightShift))
-                {
-                    BrushOpacity += scroll / 2;
-                } else
-                {
-                    MaxBrushSize += Mathf.RoundToInt(scroll*25);
-                }
-            }
         }
 
         /// <summary>
@@ -145,6 +132,11 @@ namespace InGamePaint
                 BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1f);
                 ApplyBrushSettings();
             }
+        }
+
+        private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
+        {
+            buttonPressure = e.buttonPressure;
         }
 
     }

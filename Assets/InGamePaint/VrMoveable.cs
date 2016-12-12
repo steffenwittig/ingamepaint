@@ -61,7 +61,7 @@ namespace InGamePaint
                     // rigidbody was release last frame -> add colliders to children again
                     foreach (GameObject go in RemovedColliders.ToArray())
                     {
-                        MeshCollider newMeshCollider = go.AddComponent<MeshCollider>();
+                        go.AddComponent<MeshCollider>();
                         // TODO: store and reset correct materials and meshes
                     }
                     RemovedColliders.Clear();

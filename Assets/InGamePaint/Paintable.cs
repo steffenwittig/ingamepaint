@@ -30,7 +30,7 @@ namespace InGamePaint
         /// <summary>
         /// Background color of the new texture (if no main texture is present on the material)
         /// </summary>
-        public Color backgroundColor = Color.white;
+        public Color32 backgroundColor = Color.white;
 
         /// <summary>
         /// Locks the texture from destructive painting operations
@@ -43,7 +43,7 @@ namespace InGamePaint
         protected System.Object taskLock = new System.Object();
         protected Thread thread = null;
         protected bool doProcessTasks;
-        protected Color[] updatedTexturePixels;
+        protected Color32[] updatedTexturePixels;
         protected Texture2D texture;
 
         public bool HasUnsavedChanges
@@ -54,7 +54,7 @@ namespace InGamePaint
             }
         }
 
-        public Color[] Pixels
+        public Color32[] Pixels
         {
             get
             {
@@ -91,10 +91,11 @@ namespace InGamePaint
 
             if (material.mainTexture == null)
             {
-                texture = new Texture2D(resolutionX, resolutionY);
+                texture = new Texture2D(Width, Height);
                 material.mainTexture = texture;
                 Clear(backgroundColor);
-            } else
+            }
+            else
             {
                 // copy original texture
                 resolutionX = material.mainTexture.width;
@@ -110,8 +111,6 @@ namespace InGamePaint
             changed = true;
             hasUnsavedChanges = false;
 
-            //this.StartCoroutineAsync(ProcessTasks());
-
             doProcessTasks = true;
             thread = new Thread(new ThreadStart(ProcessTasks));
             thread.IsBackground = true;
@@ -126,7 +125,7 @@ namespace InGamePaint
 
             if (updatedTexturePixels != null && updatedTexturePixels.Length > 0)
             {
-                texture.SetPixels(updatedTexturePixels);
+                texture.SetPixels32(updatedTexturePixels);
                 texture.Apply();
                 changed = false;
             }
@@ -231,7 +230,7 @@ namespace InGamePaint
         {
             if (!locked)
             {
-                Color[] col = new Color[resolutionX * resolutionY];
+                Color32[] col = new Color32[resolutionX * resolutionY];
 
                 for (int i = 0; i < col.Length; i++)
                 {

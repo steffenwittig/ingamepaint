@@ -8,8 +8,8 @@ namespace InGamePaint
     /// </summary>
     public class PaintTask
     {
-        private Color[] alphaTexturePixels;
-        private Color[] colorTexturePixels;
+        private Color32[] alphaTexturePixels;
+        private Color32[] colorTexturePixels;
         private int x, y, baseTextureWidth, baseTextureHeight, alphaTextureWidth, alphaTextureHeight, colorTextureWidth, colorTextureHeight;
         private Paintable paintable;
 
@@ -28,11 +28,11 @@ namespace InGamePaint
             baseTextureWidth = paintable.Width;
             baseTextureHeight = paintable.Height;
 
-            alphaTexturePixels = alphaTexture.GetPixels();
+            alphaTexturePixels = alphaTexture.GetPixels32();
             alphaTextureWidth = alphaTexture.width;
             alphaTextureHeight = alphaTexture.height;
 
-            colorTexturePixels = colorTexture.GetPixels();
+            colorTexturePixels = colorTexture.GetPixels32();
             colorTextureWidth = colorTexture.width;
             colorTextureHeight = colorTexture.height;
 
@@ -45,8 +45,7 @@ namespace InGamePaint
         /// </summary>
         public void Process()
         {
-
-            Color[] baseTexturePixels = paintable.Pixels;
+            Color32[] baseTexturePixels = paintable.Pixels;
 
             int brushWidth = alphaTextureWidth;
             int brushHeight = alphaTextureHeight;
@@ -87,7 +86,7 @@ namespace InGamePaint
             alphaTexturePixels = CropArea(alphaTexturePixels, brushHeight, brushSourceX, brushSourceY, brushSourceWidth, brushSourceHeight);
             colorTexturePixels = CropArea(colorTexturePixels, brushHeight, brushSourceX, brushSourceY, brushSourceWidth, brushSourceHeight);
 
-            Color[] newPixels = CopyArea(baseTexturePixels, baseTextureWidth, baseTextureHeight, colorTexturePixels, alphaTexturePixels, x, y, brushSourceWidth, brushSourceHeight);
+            Color32[] newPixels = CopyArea(baseTexturePixels, baseTextureWidth, baseTextureHeight, colorTexturePixels, alphaTexturePixels, x, y, brushSourceWidth, brushSourceHeight);
             paintable.Pixels = newPixels;
         }
 
@@ -101,9 +100,9 @@ namespace InGamePaint
         /// <param name="outputWidth">Desired width of the new texture</param>
         /// <param name="outputHeight">Desired height of the new texture</param>
         /// <returns>Pixel array of the new texture</returns>
-        protected Color[] CropArea(Color[] inputPixels, int inputHeight, int cropLeft, int cropTop, int outputWidth, int outputHeight)
+        protected Color32[] CropArea(Color32[] inputPixels, int inputHeight, int cropLeft, int cropTop, int outputWidth, int outputHeight)
         {
-            List<Color> clippedPixels = new List<Color>();
+            List<Color32> clippedPixels = new List<Color32>();
 
             for (int y = cropTop; y < cropTop + outputHeight; y++)
             {
@@ -130,18 +129,18 @@ namespace InGamePaint
         /// <param name="insertWidth">width of the input textures</param>
         /// <param name="insertHeight">height of the input textures</param>
         /// <returns>The updated pixels of the base texture</returns>
-        protected Color[] CopyArea(
-            Color[] baseTexturePixels,
+        protected Color32[] CopyArea(
+            Color32[] baseTexturePixels,
             int baseWidth,
             int baseHeight,
-            Color[] sourceTexturePixels,
-            Color[] sourceTexturePixelsAlpha,
+            Color32[] sourceTexturePixels,
+            Color32[] sourceTexturePixelsAlpha,
             int insertX,
             int insertY,
             int insertWidth,
             int insertHeight)
         {
-            baseTexturePixels = (Color[])baseTexturePixels.Clone();
+            baseTexturePixels = (Color32[])baseTexturePixels.Clone();
 
             int brushIndex = 0;
 
@@ -154,8 +153,8 @@ namespace InGamePaint
 
                     if (baseIndex < baseTexturePixels.Length && brushIndex < sourceTexturePixels.Length)
                     {
-                        float baseAlpha = baseTexturePixels[baseIndex].a;
-                        float alpha = alphaTexturePixels[brushIndex].a * colorTexturePixels[brushIndex].a;
+                        int baseAlpha = baseTexturePixels[baseIndex].a;
+                        int alpha = alphaTexturePixels[brushIndex].a * colorTexturePixels[brushIndex].a;
                         float colorMix = alpha;
                         if (alpha > 0 && baseAlpha > 0)
                         {
@@ -165,10 +164,13 @@ namespace InGamePaint
                             // we're drawing on a fully transparent surface, so the color value should be multiplied to prevent bright or dark edges
                             colorMix = Mathf.Min(1, colorMix*4);
                         }
-                        baseTexturePixels[baseIndex].r = Mathf.Lerp(baseTexturePixels[baseIndex].r, colorTexturePixels[brushIndex].r, colorMix);
-                        baseTexturePixels[baseIndex].g = Mathf.Lerp(baseTexturePixels[baseIndex].g, colorTexturePixels[brushIndex].g, colorMix);
-                        baseTexturePixels[baseIndex].b = Mathf.Lerp(baseTexturePixels[baseIndex].b, colorTexturePixels[brushIndex].b, colorMix);
-                        baseTexturePixels[baseIndex].a = baseAlpha + alpha;
+
+                        int newAlpha = Mathf.Max(Mathf.Min(baseAlpha + alpha, byte.MinValue), byte.MaxValue);
+
+                        baseTexturePixels[baseIndex].r = System.Convert.ToByte(Mathf.Lerp(baseTexturePixels[baseIndex].r, colorTexturePixels[brushIndex].r, colorMix));
+                        baseTexturePixels[baseIndex].g = System.Convert.ToByte(Mathf.Lerp(baseTexturePixels[baseIndex].g, colorTexturePixels[brushIndex].g, colorMix));
+                        baseTexturePixels[baseIndex].b = System.Convert.ToByte(Mathf.Lerp(baseTexturePixels[baseIndex].b, colorTexturePixels[brushIndex].b, colorMix));
+                        baseTexturePixels[baseIndex].a = System.Convert.ToByte(newAlpha);
 
                     }
                     brushIndex++;

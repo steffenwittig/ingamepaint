@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.IO;
+using System.Collections.Generic;
 
 namespace InGamePaint
 {
@@ -43,9 +44,15 @@ namespace InGamePaint
             {
                 return hasUnsavedChanges;
             }
+            set
+            {
+                hasUnsavedChanges = value;
+            }
         }
 
         protected Texture2D texture;
+
+        protected Color32[] texturePixels;
 
         /// <summary>
         /// Initialize texture to paint on and set it as main texture
@@ -56,7 +63,7 @@ namespace InGamePaint
 
             if (material.mainTexture == null)
             {
-                texture = new Texture2D(resolutionX, resolutionY);
+                texture = new Texture2D(resolutionX, resolutionY, TextureFormat.ARGB32, false);
                 material.mainTexture = texture;
                 Clear(backgroundColor);
             } else
@@ -64,8 +71,8 @@ namespace InGamePaint
                 // copy original texture
                 resolutionX = material.mainTexture.width;
                 resolutionY = material.mainTexture.height;
-                texture = new Texture2D(resolutionX, resolutionY);
-                texture.SetPixels(((Texture2D)material.mainTexture).GetPixels());
+                texture = new Texture2D(resolutionX, resolutionY, TextureFormat.ARGB32, false);
+                texture.SetPixels32(((Texture2D)material.mainTexture).GetPixels32());
                 material.mainTexture = texture;
             }
             MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
@@ -118,10 +125,10 @@ namespace InGamePaint
         /// </summary>
         /// <param name="x">X coordinate of the center point of the texture on the Paintable</param>
         /// <param name="y">Y coordinate of the center point of the texture on the Paintable</param>
-        /// <param name="texture">Texture that will be painted</param>
-        public void PaintTexture(int x, int y, Texture2D texture)
+        /// <param name="texturePixels">Texture that will be painted</param>
+        public void PaintTexture(int x, int y, int brushWidth, int brushHeight, Color32[] texturePixels)
         {
-            PaintTexture(x, y, texture, texture);
+            PaintTexture(x, y, brushWidth, brushHeight, texturePixels, texturePixels);
         }
 
         /// <summary>
@@ -131,68 +138,96 @@ namespace InGamePaint
         /// <param name="y">Center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
         /// <param name="colorTexture">Color component of the texture</param>
-        public void PaintTexture(int x, int y, Texture2D alphaTexture, Texture2D colorTexture)
+        public void PaintTexture(int inputX, int inputY, int inputWidth, int inputHeight, Color32[] alphaTexture, Color32[] colorTexture)
         {
             if (!locked)
             {
-                int brushWidth = alphaTexture.width;
-                int brushHeight = alphaTexture.height;
-                x -= brushWidth / 2;
-                y -= brushHeight / 2;
+
+                inputX -= inputWidth / 2;
+                inputY -= inputHeight / 2;
+
+                int x = inputX;
+                int y = inputY;
 
                 int brushSourceX = 0;
                 int brushSourceY = 0;
 
+                int width = inputWidth;
+                int height = inputHeight;
+
+                /*
+                 * Check if brush is moving over a border and adjust brush coordinates accordingly
+                 */
                 if (x < 0)
                 {
                     // brush is going over left border
                     brushSourceX = Mathf.Abs(x);
-                    brushWidth -= brushSourceX;
+                    width -= brushSourceX;
                     x = 0;
                 }
-                else if (x + brushWidth > texture.width)
+                else if (x + width > texture.width)
                 {
                     // bush is going over right border
-                    brushWidth -= x + brushWidth - texture.width;
+                    width -= x + width - texture.width;
                 }
-                if (y + brushHeight > texture.height)
+                if (y + height > texture.height)
                 {
                     // brush is going over upper border
-                    brushHeight -= y + brushHeight - texture.height;
+                    height -= y + height - texture.height;
                 }
                 else if (y < 0)
                 {
                     // brush is going over lower border
                     brushSourceY = Mathf.Abs(y);
-                    brushHeight -= brushSourceY;
+                    height -= brushSourceY;
                     y = 0;
                 }
 
-                Color[] alphaTexturePixels = alphaTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
-                Color[] colorTexturePixels = colorTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
-                Color[] sourcePixels = texture.GetPixels(x, y, brushWidth, brushHeight);
-                Color[] paintPixels = new Color[alphaTexturePixels.Length];
+                /*
+                 * Calculate new color values
+                 */
+                Color32[] paintPixels = new Color32[width * height];
+                Color32[] sourcePixels = texture.GetPixels32();
+                int sourceHeight = texture.height;
+                int paintIndex = 0;
 
-                // create paint texture (mix the RGBA of the source rectangle with the brush color depending on brush alpha)
-                for (int i = 0; i < alphaTexturePixels.Length; i++)
+                for (int paintY = y; paintY < y + height; paintY++)
                 {
-                    float alpha = alphaTexturePixels[i].a * colorTexturePixels[i].a;
-                    float colorMix = alpha;
-                    // if the pixel is fully transparent, colorMix will be at least 0.5
-                    //if (sourcePixels[i].a == 0)
-                    //{
-                    colorMix = Mathf.Min(1, colorMix / sourcePixels[i].a);
-                    //}
-                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, colorTexturePixels[i].r, colorMix);
-                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, colorTexturePixels[i].g, colorMix);
-                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, colorTexturePixels[i].b, colorMix);
-                    paintPixels[i].a = sourcePixels[i].a + alpha;
+                    for (int paintX = x; paintX < x + width; paintX++)
+                    {
+                        int sourceIndex = paintY * sourceHeight + paintX;
+                        int brushIndex = (paintY - inputY) * inputHeight + paintX - inputX;
+
+                        float sourceAlpha = sourcePixels[sourceIndex].a / 255;
+                        float brushAlpha = (float)alphaTexture[brushIndex].a / 255;
+                        float colorMix = brushAlpha;
+
+                        if (brushAlpha > 0 && sourceAlpha > 0)
+                        {
+                            colorMix = Mathf.Min(1, colorMix * sourceAlpha);
+                        }
+                        else
+                        {
+                            // we're drawing on a fully transparent surface, so the color value should be multiplied to prevent bright or dark edges
+                            colorMix = Mathf.Min(1, colorMix * 4);
+                            brushAlpha = Mathf.Min(1, sourceAlpha + brushAlpha);
+                        }
+
+                        paintPixels[paintIndex] = Color32.Lerp(sourcePixels[sourceIndex], colorTexture[brushIndex], colorMix);
+                        if (brushAlpha != colorMix)
+                        {
+                            paintPixels[paintIndex].a = System.Convert.ToByte(brushAlpha * 255);
+                        }
+
+                        paintIndex++;
+                    }
                 }
-                Texture2D paintTexture = new Texture2D(brushWidth, brushHeight);
-                paintTexture.SetPixels(paintPixels);
+
+                Texture2D paintTexture = new Texture2D(width, height);
+                paintTexture.SetPixels32(paintPixels);
 
                 // add paint texture to canvas texture
-                Graphics.CopyTexture(paintTexture, 0, 0, 0, 0, brushWidth, brushHeight, texture, 0, 0, x, y);
+                Graphics.CopyTexture(paintTexture, 0, 0, 0, 0, width, height, texture, 0, 0, x, y);
 
                 hasUnsavedChanges = true;
                 changed = true;
@@ -204,9 +239,9 @@ namespace InGamePaint
         /// </summary>
         /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
         /// <param name="texture">Texture that will be painted</param>
-        public void PaintTexture(Vector2 coordsCenter, Texture2D texture)
+        public void PaintTexture(Vector2 coordsCenter, int brushWidth, int brushHeight, Color32[] texture)
         {
-            PaintTexture(coordsCenter, texture, texture);
+            PaintTexture(coordsCenter, brushWidth, brushHeight, texture, texture);
         }
 
         /// <summary>
@@ -215,27 +250,27 @@ namespace InGamePaint
         /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
         /// <param name="colorTexture">Color component of the texture</param>
-        public void PaintTexture(Vector2 coordsCenter, Texture2D alphaTexture, Texture2D colorTexture)
+        public void PaintTexture(Vector2 coordsCenter, int brushWidth, int brushHeight, Color32[] alphaTexture, Color32[] colorTexture)
         {
-            PaintTexture(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y), alphaTexture, colorTexture);
+            PaintTexture(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y), brushWidth, brushHeight, alphaTexture, colorTexture);
         }
 
         /// <summary>
         /// Fill whole texture with solid color
         /// </summary>
         /// <param name="color">Texture will be filled with this color</param>
-        public void Clear(Color color)
+        public void Clear(Color32 color)
         {
             if (!locked)
             {
-                Color[] col = new Color[resolutionX * resolutionY];
+                Color32[] col = new Color32[resolutionX * resolutionY];
 
                 for (int i = 0; i < col.Length; i++)
                 {
                     col[i] = color;
                 }
 
-                texture.SetPixels(col);
+                texture.SetPixels32(col);
                 changed = true;
                 hasUnsavedChanges = true;
             }

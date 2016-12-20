@@ -15,6 +15,7 @@ namespace InGamePaint
                     if (paintable.HasUnsavedChanges)
                     {
                         Debug.Log("Saved " + paintable.SaveToFile());
+                        paintable.HasUnsavedChanges = false;
                     }
                 }
 

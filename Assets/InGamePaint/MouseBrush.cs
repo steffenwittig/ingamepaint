@@ -14,7 +14,7 @@ namespace InGamePaint
         /// </summary>
         new protected void Start()
         {
-            brushSize = 32;
+            brushSize = 128;
 
             base.Start();
 

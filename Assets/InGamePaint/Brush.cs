@@ -12,14 +12,15 @@ namespace InGamePaint
         public Texture2D brushTip;
 
         protected int brushSize;
-        protected float brushSpacing = 0.3f, currentPaintableDistance;
-        protected Color color = Color.black;
+        protected float brushSpacing = 0.5f, currentPaintableDistance;
+        protected Color32 color = Color.black;
         protected Texture2D brushColorTexture, brushAlphaOriginal;
         protected Paintable currentPaintable, lastPaintable;
         protected Vector2 currentPaintableCoords, lastPaintableCoords;
         protected Vector3 shapeDisplayInitScale;
         protected Renderer colorDisplayRenderer, shapeDisplayRenderer;
         protected bool paintedLastFrame = false, showHelp = true;
+        protected Color32[] alphaPixels = null, colorPixels = null;
 
         /// <summary>
         /// Initialize brush textures
@@ -28,8 +29,9 @@ namespace InGamePaint
         {
             if (brushTip == null)
             {
-                brushTip = new Texture2D(2, 2); // 1x1 pixel texture causes errors in TextureScale
-                brushTip.SetPixels(new Color[] { color, color, color, color });
+                //brushTip = new Texture2D(2, 2, TextureFormat.ARGB32, false); // 1x1 pixel texture causes errors in TextureScale
+                //brushTip.SetPixels32(new Color32[] { color, color, color, color });
+                alphaPixels = new Color32[] { color, color, color, color };
             }
 
             brushAlphaOriginal = brushTip;
@@ -40,22 +42,28 @@ namespace InGamePaint
         /// </summary>
         virtual protected void ApplyBrushSettings()
         {
+            Debug.Log("applybrushsettings");
+
             // Clone and scale texture
             if (brushTip.width != DynamicBrushSize)
             {
                 brushTip = new Texture2D(brushAlphaOriginal.width, brushAlphaOriginal.height);
-                brushTip.SetPixels(brushAlphaOriginal.GetPixels());
+                brushTip.SetPixels32(brushAlphaOriginal.GetPixels32());
                 TextureScale.Bilinear(brushTip, DynamicBrushSize, DynamicBrushSize);
+                alphaPixels = brushTip.GetPixels32();
             }
 
             brushColorTexture = new Texture2D(DynamicBrushSize, DynamicBrushSize);
-            Color[] pixels = new Color[DynamicBrushSize * DynamicBrushSize];
+            Color32[] pixels = new Color32[DynamicBrushSize * DynamicBrushSize];
             for (int i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = color;
             }
-            brushColorTexture.SetPixels(pixels);
-            brushColorTexture.Apply();
+
+            colorPixels = pixels;
+
+            //brushColorTexture.SetPixels32(pixels);
+            //brushColorTexture.Apply();
         }
 
         /// <summary>
@@ -136,7 +144,7 @@ namespace InGamePaint
         /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
         {
-            currentPaintable.PaintTexture(coords, brushTip, brushColorTexture);
+            currentPaintable.PaintTexture(coords, brushSize, brushSize, alphaPixels, colorPixels);
         }
 
         /// <summary>
@@ -171,7 +179,7 @@ namespace InGamePaint
             }
             set
             {
-                color.a = Mathf.Max(0, Mathf.Min(value, 1));
+                color.a = System.Convert.ToByte(Mathf.Max(0, Mathf.Min(value, 1)));
                 ApplyBrushSettings();
             }
         }

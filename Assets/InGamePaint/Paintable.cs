@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace InGamePaint
 {
@@ -30,7 +28,7 @@ namespace InGamePaint
         /// <summary>
         /// Background color of the new texture (if no main texture is present on the material)
         /// </summary>
-        public Color32 backgroundColor = Color.white;
+        public Color backgroundColor = Color.white;
 
         /// <summary>
         /// Locks the texture from destructive painting operations
@@ -38,13 +36,6 @@ namespace InGamePaint
         public bool locked = false;
 
         protected bool changed, hasUnsavedChanges;
-
-        protected Queue<PaintTask> tasks = new Queue<PaintTask>();
-        protected System.Object taskLock = new System.Object();
-        protected Thread thread = null;
-        protected bool doProcessTasks;
-        protected Color32[] updatedTexturePixels;
-        protected Texture2D texture;
 
         public bool HasUnsavedChanges
         {
@@ -54,33 +45,7 @@ namespace InGamePaint
             }
         }
 
-        public Color32[] Pixels
-        {
-            get
-            {
-                return updatedTexturePixels;
-            }
-            set
-            {
-                updatedTexturePixels = value;
-            }
-        }
-
-        public int Width
-        {
-            get
-            {
-                return resolutionX;
-            }
-        }
-
-        public int Height
-        {
-            get
-            {
-                return resolutionY;
-            }
-        }
+        protected Texture2D texture;
 
         /// <summary>
         /// Initialize texture to paint on and set it as main texture
@@ -91,18 +56,16 @@ namespace InGamePaint
 
             if (material.mainTexture == null)
             {
-                texture = new Texture2D(Width, Height);
+                texture = new Texture2D(resolutionX, resolutionY);
                 material.mainTexture = texture;
                 Clear(backgroundColor);
-            }
-            else
+            } else
             {
                 // copy original texture
                 resolutionX = material.mainTexture.width;
                 resolutionY = material.mainTexture.height;
                 texture = new Texture2D(resolutionX, resolutionY);
                 texture.SetPixels(((Texture2D)material.mainTexture).GetPixels());
-                texture.Apply();
                 material.mainTexture = texture;
             }
             MeshCollider meshCollider = gameObject.AddComponent<MeshCollider>();
@@ -110,11 +73,6 @@ namespace InGamePaint
 
             changed = true;
             hasUnsavedChanges = false;
-
-            doProcessTasks = true;
-            thread = new Thread(new ThreadStart(ProcessTasks));
-            thread.IsBackground = true;
-            thread.Start();
         }
 
         /// <summary>
@@ -122,29 +80,10 @@ namespace InGamePaint
         /// </summary>
         protected void Update()
         {
-
-            if (updatedTexturePixels != null && updatedTexturePixels.Length > 0)
+            if (texture != null && changed)
             {
-                texture.SetPixels32(updatedTexturePixels);
                 texture.Apply();
                 changed = false;
-            }
-        }
-
-        protected void OnDestroy()
-        {
-            doProcessTasks = false;
-            try
-            {
-                if (this.thread != null && this.thread.IsAlive)
-                {
-                    Debug.Log("Terminate thread.");
-                    this.thread.Abort();
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.Log(e.Message);
             }
         }
 
@@ -196,8 +135,67 @@ namespace InGamePaint
         {
             if (!locked)
             {
-                tasks.Enqueue(new PaintTask(this, x, y, colorTexture, alphaTexture));
+                int brushWidth = alphaTexture.width;
+                int brushHeight = alphaTexture.height;
+                x -= brushWidth / 2;
+                y -= brushHeight / 2;
+
+                int brushSourceX = 0;
+                int brushSourceY = 0;
+
+                if (x < 0)
+                {
+                    // brush is going over left border
+                    brushSourceX = Mathf.Abs(x);
+                    brushWidth -= brushSourceX;
+                    x = 0;
+                }
+                else if (x + brushWidth > texture.width)
+                {
+                    // bush is going over right border
+                    brushWidth -= x + brushWidth - texture.width;
+                }
+                if (y + brushHeight > texture.height)
+                {
+                    // brush is going over upper border
+                    brushHeight -= y + brushHeight - texture.height;
+                }
+                else if (y < 0)
+                {
+                    // brush is going over lower border
+                    brushSourceY = Mathf.Abs(y);
+                    brushHeight -= brushSourceY;
+                    y = 0;
+                }
+
+                Color[] alphaTexturePixels = alphaTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
+                Color[] colorTexturePixels = colorTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
+                Color[] sourcePixels = texture.GetPixels(x, y, brushWidth, brushHeight);
+                Color[] paintPixels = new Color[alphaTexturePixels.Length];
+
+                // create paint texture (mix the RGBA of the source rectangle with the brush color depending on brush alpha)
+                for (int i = 0; i < alphaTexturePixels.Length; i++)
+                {
+                    float alpha = alphaTexturePixels[i].a * colorTexturePixels[i].a;
+                    float colorMix = alpha;
+                    // if the pixel is fully transparent, colorMix will be at least 0.5
+                    //if (sourcePixels[i].a == 0)
+                    //{
+                    colorMix = Mathf.Min(1, colorMix / sourcePixels[i].a);
+                    //}
+                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, colorTexturePixels[i].r, colorMix);
+                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, colorTexturePixels[i].g, colorMix);
+                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, colorTexturePixels[i].b, colorMix);
+                    paintPixels[i].a = sourcePixels[i].a + alpha;
+                }
+                Texture2D paintTexture = new Texture2D(brushWidth, brushHeight);
+                paintTexture.SetPixels(paintPixels);
+
+                // add paint texture to canvas texture
+                Graphics.CopyTexture(paintTexture, 0, 0, 0, 0, brushWidth, brushHeight, texture, 0, 0, x, y);
+
                 hasUnsavedChanges = true;
+                changed = true;
             }
         }
 
@@ -230,16 +228,15 @@ namespace InGamePaint
         {
             if (!locked)
             {
-                Color32[] col = new Color32[resolutionX * resolutionY];
+                Color[] col = new Color[resolutionX * resolutionY];
 
                 for (int i = 0; i < col.Length; i++)
                 {
                     col[i] = color;
                 }
 
-                //texture.SetPixels(col);
-                updatedTexturePixels = col;
-                //changed = true;
+                texture.SetPixels(col);
+                changed = true;
                 hasUnsavedChanges = true;
             }
         }
@@ -266,28 +263,6 @@ namespace InGamePaint
             string path = Application.persistentDataPath + "/" + name + "_" + DateTime.Now.ToString("MM-dd-yyyy-hh-mm") + ".png";
             File.WriteAllBytes(path, texture.EncodeToPNG());
             return path;
-        }
-
-        protected void ProcessTasks()
-        {
-            while (doProcessTasks)
-            {
-                try
-                {
-                    if (tasks.Count > 0)
-                    {
-                        PaintTask task = tasks.Dequeue();
-                        task.Process();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.Log(e.ToString());
-                    doProcessTasks = false;
-                    // something is seriously wrong
-                }
-            }
-            
         }
 
     }

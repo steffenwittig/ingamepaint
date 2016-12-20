@@ -136,10 +136,6 @@ namespace InGamePaint
 
         private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
         {
-            if (e.buttonPressure == 0)
-            {
-                paintedLastFrame = false;
-            }
             buttonPressure = e.buttonPressure;
         }
 

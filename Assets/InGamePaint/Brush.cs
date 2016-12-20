@@ -97,7 +97,7 @@ namespace InGamePaint
 
             bool painted = false;
 
-            if (paintedLastFrame && currentPaintable == lastPaintable)
+            if (paintedLastFrame && currentPaintable == lastPaintable && currentPaintableCoords != lastPaintableCoords)
             {
                 // paint interpolated brush tips between the last painted coords and the current cords
                 float distance = Vector2.Distance(lastPaintableCoords, currentPaintableCoords);
@@ -110,12 +110,12 @@ namespace InGamePaint
                         painted = true;
                     }
                 }
-            }
-
-            if (!painted && (!paintedLastFrame || currentPaintableCoords != lastPaintableCoords))
-            {
-                // paint a single brush tip at the current coords if we didn't paint at that position last frame
-                PaintTexture();
+            } else {
+                if (!paintedLastFrame)
+                {
+                    // start brush stroke oder paint single tip
+                    PaintTexture();
+                }
                 painted = true;
             }
 

@@ -129,7 +129,7 @@ namespace InGamePaint
         {
             if (currentPaintable != null)
             {
-                BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1f);
+                BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1);
                 ApplyBrushSettings();
             }
         }

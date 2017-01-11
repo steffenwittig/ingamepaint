@@ -114,25 +114,15 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a texture
-        /// </summary>
-        /// <param name="x">X coordinate of the center point of the texture on the Paintable</param>
-        /// <param name="y">Y coordinate of the center point of the texture on the Paintable</param>
-        /// <param name="texture">Texture that will be painted</param>
-        public void PaintTexture(int x, int y, Texture2D texture)
-        {
-            PaintTexture(x, y, texture, texture);
-        }
-
-        /// <summary>
         /// Paint a texture with specific alpha and color components
         /// </summary>
         /// <param name="x">Center point of the texture on the Paintable</param>
         /// <param name="y">Center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
-        /// <param name="colorTexture">Color component of the texture</param>
-        public void PaintTexture(int x, int y, Texture2D alphaTexture, Texture2D colorTexture)
+        /// <param name="color">Fill color of the texture</param>
+        public void PaintTexture(int x, int y, Texture2D alphaTexture, Color color)
         {
+
             if (!locked)
             {
                 int brushWidth = alphaTexture.width;
@@ -169,23 +159,22 @@ namespace InGamePaint
                 }
 
                 Color[] alphaTexturePixels = alphaTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
-                Color[] colorTexturePixels = colorTexture.GetPixels(brushSourceX, brushSourceY, brushWidth, brushHeight);
                 Color[] sourcePixels = texture.GetPixels(x, y, brushWidth, brushHeight);
                 Color[] paintPixels = new Color[alphaTexturePixels.Length];
 
                 // create paint texture (mix the RGBA of the source rectangle with the brush color depending on brush alpha)
                 for (int i = 0; i < alphaTexturePixels.Length; i++)
                 {
-                    float alpha = alphaTexturePixels[i].a * colorTexturePixels[i].a;
+                    float alpha = alphaTexturePixels[i].a * color.a;
                     float colorMix = alpha;
                     // if the pixel is fully transparent, colorMix will be at least 0.5
                     //if (sourcePixels[i].a == 0)
                     //{
                     colorMix = Mathf.Min(1, colorMix / sourcePixels[i].a);
                     //}
-                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, colorTexturePixels[i].r, colorMix);
-                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, colorTexturePixels[i].g, colorMix);
-                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, colorTexturePixels[i].b, colorMix);
+                    paintPixels[i].r = Mathf.Lerp(sourcePixels[i].r, color.r, colorMix);
+                    paintPixels[i].g = Mathf.Lerp(sourcePixels[i].g, color.g, colorMix);
+                    paintPixels[i].b = Mathf.Lerp(sourcePixels[i].b, color.b, colorMix);
                     paintPixels[i].a = sourcePixels[i].a + alpha;
                 }
                 Texture2D paintTexture = new Texture2D(brushWidth, brushHeight);
@@ -200,24 +189,14 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a texture
-        /// </summary>
-        /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
-        /// <param name="texture">Texture that will be painted</param>
-        public void PaintTexture(Vector2 coordsCenter, Texture2D texture)
-        {
-            PaintTexture(coordsCenter, texture, texture);
-        }
-
-        /// <summary>
         /// Paint a texture with specific alpha and color components
         /// </summary>
         /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
         /// <param name="colorTexture">Color component of the texture</param>
-        public void PaintTexture(Vector2 coordsCenter, Texture2D alphaTexture, Texture2D colorTexture)
+        public void PaintTexture(Vector2 coordsCenter, Texture2D alphaTexture, Color color)
         {
-            PaintTexture(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y), alphaTexture, colorTexture);
+            PaintTexture(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y), alphaTexture, color);
         }
 
         /// <summary>
@@ -247,10 +226,41 @@ namespace InGamePaint
         /// <param name="coordsCenter">Center of the color picking radius</param>
         /// <param name="radius">Not yet implemented</param>
         /// <returns></returns>
-        public Color PickColor(Vector2 coordsCenter, float radius)
+        public Color PickColor(Vector2 coordsCenter, int radius)
         {
-            // TODO: implement radius
-            return texture.GetPixel(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y));
+
+            if (radius > 1)
+            {
+                // TODO: radius should result in a square area... fix or rename it
+                int pickX = Mathf.Max(Mathf.RoundToInt(coordsCenter.x - radius / 2), 0);
+                int pickY = Mathf.Max(Mathf.RoundToInt(coordsCenter.y - radius / 2), 0);
+                int pickXmax = Mathf.Min(Mathf.RoundToInt(coordsCenter.x + radius / 2), texture.width);
+                int pickYmax = Mathf.Min(Mathf.RoundToInt(coordsCenter.y + radius / 2), texture.height);
+
+                Color[] pixels = texture.GetPixels(pickX, pickY, pickXmax - pickX, pickYmax - pickY);
+
+                float sumR = 0, sumG = 0, sumB = 0, sumA = 0;
+
+                foreach (Color pixel in pixels)
+                {
+                    sumR += pixel.r;
+                    sumG += pixel.g;
+                    sumB += pixel.b;
+                    sumA += pixel.a;
+                }
+
+                float avgA = sumA / pixels.Length;
+
+                return new Color(
+                    sumR / pixels.Length,
+                    sumG / pixels.Length,
+                    sumB / pixels.Length,
+                    avgA);
+
+            } else
+            {
+                return texture.GetPixel(Mathf.RoundToInt(coordsCenter.x), Mathf.RoundToInt(coordsCenter.y));
+            }
         }
 
         public Vector2 Uv2Pixel(Vector2 uvCoords)

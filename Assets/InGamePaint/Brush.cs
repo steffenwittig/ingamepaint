@@ -10,11 +10,12 @@ namespace InGamePaint
         /// Alpha texture of the brush
         /// </summary>
         public Texture2D brushTip;
+        public float opacityFade = 0.1f, smudgeStrength = 0.2f;
 
         protected int brushSize;
-        protected float brushSpacing = 0.3f, currentPaintableDistance;
+        protected float brushSpacing = 0.4f, currentPaintableDistance;
         protected Color color = Color.black;
-        protected Texture2D brushColorTexture, brushAlphaOriginal;
+        protected Texture2D brushAlphaOriginal;
         protected Paintable currentPaintable, lastPaintable;
         protected Vector2 currentPaintableCoords, lastPaintableCoords;
         protected Vector3 shapeDisplayInitScale;
@@ -47,15 +48,6 @@ namespace InGamePaint
                 brushTip.SetPixels(brushAlphaOriginal.GetPixels());
                 TextureScale.Bilinear(brushTip, DynamicBrushSize, DynamicBrushSize);
             }
-
-            brushColorTexture = new Texture2D(DynamicBrushSize, DynamicBrushSize);
-            Color[] pixels = new Color[DynamicBrushSize * DynamicBrushSize];
-            for (int i = 0; i < pixels.Length; i++)
-            {
-                pixels[i] = color;
-            }
-            brushColorTexture.SetPixels(pixels);
-            brushColorTexture.Apply();
         }
 
         /// <summary>
@@ -136,7 +128,16 @@ namespace InGamePaint
         /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
         {
-            currentPaintable.PaintTexture(coords, brushTip, brushColorTexture);
+            Color previousColor = currentPaintable.PickColor(coords, Mathf.RoundToInt(brushSize/2)); // Pick the color for the center quarter of the brush
+            currentPaintable.PaintTexture(coords, brushTip, color);
+            AddColor(previousColor, smudgeStrength/10); // Apply the picked color to the brush
+            BrushOpacity -= opacityFade/100;
+        }
+
+        protected void AddColor(Color addColor, float intensity)
+        {
+            color = Color.Lerp(color, addColor, Mathf.Min(1,Mathf.Max(0, intensity)));
+            ApplyBrushSettings();
         }
 
         /// <summary>
@@ -155,7 +156,6 @@ namespace InGamePaint
                     value.g,
                     value.b,
                     color.a);
-                brushColorTexture = null;
                 ApplyBrushSettings();
             }
         }
@@ -167,7 +167,7 @@ namespace InGamePaint
         {
             get
             {
-                return BrushColor.a;
+                return color.a;
             }
             set
             {

@@ -14,7 +14,7 @@ namespace InGamePaint
         /// </summary>
         new protected void Start()
         {
-            brushSize = 32;
+            brushSize = 256;
 
             base.Start();
 
@@ -52,10 +52,10 @@ namespace InGamePaint
                     paintedLastFrame = false;
                 }
 
-                if (Input.GetMouseButton(1))
+                if (Input.GetMouseButtonDown(1))
                 {
                     // Rick click
-                    BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1f);
+                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 3), 0.8f);
                 }
 
             }
@@ -96,7 +96,11 @@ namespace InGamePaint
 
             if (colorDisplayRenderer != null)
             {
-                colorDisplayRenderer.material.mainTexture = brushColorTexture;
+                Texture2D tex = new Texture2D(1, 1);
+                tex.SetPixel(0, 0, color);
+                tex.Apply();
+                colorDisplayRenderer.material.mainTexture = tex;
+
             }
             if (shapeDisplayRenderer != null)
             {

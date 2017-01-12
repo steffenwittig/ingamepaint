@@ -55,9 +55,20 @@ namespace InGamePaint
                 if (Input.GetMouseButtonDown(1))
                 {
                     // Rick click
-                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 3), 0.8f);
+                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 1), 1f);
                 }
 
+            }
+
+            if (currentClickable)
+            {
+                if (Input.GetMouseButtonDown(0))
+                {
+                    if(currentClickable.GetType().ToString() == "BrushPreset")
+                    {
+                        ApplyPreset((BrushPreset)currentClickable);
+                    }
+                }
             }
 
             // control opacity or size with mouse wheel

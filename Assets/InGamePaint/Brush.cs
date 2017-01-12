@@ -17,6 +17,7 @@ namespace InGamePaint
         protected Color color = Color.black;
         protected Texture2D brushAlphaOriginal;
         protected Paintable currentPaintable, lastPaintable;
+        protected Clickable currentClickable;
         protected Vector2 currentPaintableCoords, lastPaintableCoords;
         protected Vector3 shapeDisplayInitScale;
         protected Renderer colorDisplayRenderer, shapeDisplayRenderer;
@@ -63,10 +64,13 @@ namespace InGamePaint
             Debug.DrawRay(transform.position, ray.direction * RayDistance, Color.yellow, 0.2f, false);
 
             Paintable hitPaintable = null;
+            currentClickable = null;
 
             if (Physics.Raycast(ray, out hit, RayDistance))
             {
-                hitPaintable = hit.collider.gameObject.GetComponent<Paintable>();
+                GameObject go = hit.collider.gameObject;
+                hitPaintable = go.GetComponent<Paintable>();
+                currentClickable = go.GetComponent<Clickable>();
             }
 
             if (hitPaintable != null)
@@ -137,6 +141,15 @@ namespace InGamePaint
         protected void AddColor(Color addColor, float intensity)
         {
             color = Color.Lerp(color, addColor, Mathf.Min(1,Mathf.Max(0, intensity)));
+            ApplyBrushSettings();
+        }
+
+        protected void ApplyPreset(BrushPreset preset)
+        {
+            //brushSize = preset.brushSize;
+            smudgeStrength = preset.smudgeStrength;
+            opacityFade = preset.opacityFade;
+            brushTip = brushAlphaOriginal = preset.brushTip;
             ApplyBrushSettings();
         }
 

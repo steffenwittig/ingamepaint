@@ -55,7 +55,7 @@ namespace InGamePaint
                 if (Input.GetMouseButtonDown(1))
                 {
                     // Rick click
-                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 1), 1f);
+                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 1), 1f, false);
                 }
 
             }

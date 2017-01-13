@@ -132,15 +132,20 @@ namespace InGamePaint
         /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
         {
-            Color previousColor = currentPaintable.PickColor(coords, Mathf.RoundToInt(brushSize/2)); // Pick the color for the center quarter of the brush
+            Color previousColor = currentPaintable.PickColor(coords, Mathf.RoundToInt(brushSize/2)); // Picks the color for the center quarter of the brush
             currentPaintable.PaintTexture(coords, brushTip, color);
-            AddColor(previousColor, smudgeStrength/10); // Apply the picked color to the brush
-            BrushOpacity -= opacityFade/100;
+            AddColor(previousColor, smudgeStrength/10, true); // Apply the picked color to the brush
+            BrushOpacity -= opacityFade/250; // Reduce the opacity
         }
 
-        protected void AddColor(Color addColor, float intensity)
+        protected void AddColor(Color addColor, float intensity, bool ignoreOpacity)
         {
+            float alpha = color.a;
             color = Color.Lerp(color, addColor, Mathf.Min(1,Mathf.Max(0, intensity)));
+            if (ignoreOpacity)
+            {
+                color.a = alpha;
+            }
             ApplyBrushSettings();
         }
 

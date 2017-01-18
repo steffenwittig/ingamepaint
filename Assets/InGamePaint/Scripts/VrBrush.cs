@@ -60,10 +60,11 @@ namespace InGamePaint
 
             //Setup controller event listeners
             GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
-            GetComponent<VRTK_ControllerEvents>().TriggerAxisChanged += new ControllerInteractionEventHandler(TriggerChanged);
+            //GetComponent<VRTK_ControllerEvents>().TriggerAxisChanged += new ControllerInteractionEventHandler(TriggerChanged);
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.SetPositions(new Vector3[] { Vector3.zero, GetRay().direction * RayDistance });
-            lineRenderer.SetWidth(0.05f, 0);
+            lineRenderer.startWidth = 0.05f;
+            lineRenderer.endWidth = 0;
             lineRenderer.useWorldSpace = false;
             lineRenderer.material = new Material(Shader.Find("Unlit/Color"));
             lineRenderer.material.color = BrushColor;
@@ -80,12 +81,16 @@ namespace InGamePaint
 
             UpdatePaintableCoords();
 
-            if (buttonPressure >= 0.1f && currentPaintable != null)
+            if (/*buttonPressure >= 0.1f && */currentPaintable != null)
             {
                 float pulseStrength = (1 - currentPaintableDistance / RayDistance) * maxPulseStrength;
                 GetComponent<VRTK_ControllerActions>().TriggerHapticPulse((ushort)pulseStrength);
-                BrushOpacity = buttonPressure;
+                //BrushOpacity = buttonPressure;
                 Paint();
+            }
+            if (currentClickable != null)
+            {
+                ClickClickable();
             }
 
         }
@@ -134,10 +139,10 @@ namespace InGamePaint
             }
         }
 
-        private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
-        {
-            buttonPressure = e.buttonPressure;
-        }
+        //private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
+        //{
+        //    buttonPressure = e.buttonPressure;
+        //}
 
     }
 }

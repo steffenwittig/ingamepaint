@@ -63,11 +63,7 @@ namespace InGamePaint
             {
                 if (Input.GetMouseButtonDown(0))
                 {
-                    switch(currentClickable.GetType().ToString())
-                    {
-                        case "BrushPreset": ApplyPreset((BrushPreset)currentClickable); break;
-                        case "ColorPreset": Debug.Log(((ColorPreset)currentClickable).color); AddColor(((ColorPreset)currentClickable).color, 1f, false); break;
-                    }
+                    ClickClickable();
                 }
             }
 

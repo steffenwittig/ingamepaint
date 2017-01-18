@@ -133,10 +133,26 @@ namespace InGamePaint
         /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
         {
-            Color previousColor = currentPaintable.PickColor(coords, Mathf.RoundToInt(brushSize/2)); // Picks the color for the center quarter of the brush
-            currentPaintable.PaintTexture(coords, brushTip, color);
-            AddColor(previousColor, smudgeStrength/10, true); // Apply the picked color to the brush
-            BrushOpacity -= opacityFade/250; // Reduce the opacity
+            // calculate the strength of the smudge effect, depening on the brush's and paintable's settings
+            float smudgeFactor = Mathf.Max(smudgeStrength, currentPaintable.minSmudgeStrength);
+            smudgeFactor = (smudgeFactor * Mathf.Max(0, currentPaintable.smudgeMultiplier));
+            smudgeFactor /= 10;
+
+            if (smudgeFactor > 0)
+            {
+                // pick previous color from the center quarter of the brush
+                Color previousColor = currentPaintable.PickColor(coords, Mathf.RoundToInt(brushSize / 2));
+                // apply brush tip to canvas texture
+                currentPaintable.PaintTexture(coords, brushTip, color);
+                // mix previous color into brush color
+                AddColor(previousColor, smudgeFactor, true);
+            } else
+            {
+                currentPaintable.PaintTexture(coords, brushTip, color);
+            }
+
+            // reduce opacity
+            BrushOpacity -= opacityFade/250;
         }
 
         protected void AddColor(Color addColor, float intensity, bool ignoreOpacity)
@@ -162,10 +178,11 @@ namespace InGamePaint
 
         protected void ClickClickable()
         {
+            Debug.Log(currentClickable.GetType().ToString());
             switch (currentClickable.GetType().ToString())
             {
-                case "BrushPreset": ApplyPreset((BrushPreset)currentClickable); break;
-                case "ColorPreset": Debug.Log(((ColorPreset)currentClickable).color); AddColor(((ColorPreset)currentClickable).color, 1f, false); break;
+                case "InGamePaint.BrushPreset": ApplyPreset((BrushPreset)currentClickable); break;
+                case "InGamePaint.ColorPreset": AddColor(((ColorPreset)currentClickable).color, 1f, false); break;
             }
         }
 

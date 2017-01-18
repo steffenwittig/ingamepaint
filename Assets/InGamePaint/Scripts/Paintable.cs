@@ -31,6 +31,16 @@ namespace InGamePaint
         public Color backgroundColor = Color.white;
 
         /// <summary>
+        /// Amplifies the smudge effect of a brush
+        /// </summary>
+        public float smudgeMultiplier = 0;
+
+        /// <summary>
+        /// Requests a minimal smudge value from a brush
+        /// </summary>
+        public float minSmudgeStrength = 0;
+
+        /// <summary>
         /// Locks the texture from destructive painting operations
         /// </summary>
         public bool locked = false;

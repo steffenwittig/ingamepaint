@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
-using UnityEditor;
 
 namespace InGamePaint
 {
@@ -14,7 +12,7 @@ namespace InGamePaint
         public float opacityFade = 0.1f, smudgeStrength = 0.2f, brushSpacing = 0.4f;
         public int brushSize;
 
-        public float currentPaintableDistance;
+        protected float currentPaintableDistance, timeSinceLastUpdate, updateFrequency = 1f / 60f;
         protected Color color = Color.black;
         protected Texture2D brushAlphaOriginal;
         protected Paintable currentPaintable, lastPaintable;
@@ -36,12 +34,42 @@ namespace InGamePaint
             }
 
             brushAlphaOriginal = brushTip;
+
+            GameObject colorDisplay = GameObject.Find("BrushColor");
+            if (colorDisplay != null)
+            {
+                colorDisplayRenderer = colorDisplay.GetComponent<Renderer>();
+            }
+            GameObject shapeDisplay = GameObject.Find("BrushShape");
+            if (shapeDisplay != null)
+            {
+                shapeDisplayRenderer = shapeDisplay.GetComponent<Renderer>();
+                shapeDisplayInitScale = shapeDisplay.transform.localScale;
+            }
+
+            ApplyBrushSettings();
         }
 
-        /// <summary>
-        /// Create new brush texture, after new color and/or opacity values were set
-        /// </summary>
         virtual protected void ApplyBrushSettings()
+        {
+            UpdateBrushTextureToSize();
+
+            if (colorDisplayRenderer != null)
+            {
+                Texture2D tex = new Texture2D(1, 1);
+                tex.SetPixel(0, 0, color);
+                tex.Apply();
+                colorDisplayRenderer.material.mainTexture = tex;
+
+            }
+            if (shapeDisplayRenderer != null)
+            {
+                shapeDisplayRenderer.material.mainTexture = brushAlphaOriginal;
+                shapeDisplayRenderer.transform.localScale = brushSize * shapeDisplayInitScale / 128;
+            }
+        }
+
+        protected void UpdateBrushTextureToSize()
         {
             // Clone and scale texture
             if (brushTip.width != DynamicBrushSize)
@@ -178,7 +206,6 @@ namespace InGamePaint
 
         protected void ClickClickable()
         {
-            Debug.Log(currentClickable.GetType().ToString());
             switch (currentClickable.GetType().ToString())
             {
                 case "InGamePaint.BrushPreset": ApplyPreset((BrushPreset)currentClickable); break;
@@ -263,5 +290,18 @@ namespace InGamePaint
         /// </summary>
         /// <returns></returns>
         abstract protected Ray GetRay();
+
+        abstract protected void UpdateBrush();
+
+        protected void Update()
+        {
+            timeSinceLastUpdate += Time.deltaTime;
+
+            if (timeSinceLastUpdate > updateFrequency)
+            {
+                UpdateBrush();
+                timeSinceLastUpdate = 0;
+            }
+        }
     }
 }

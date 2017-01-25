@@ -10,32 +10,9 @@ namespace InGamePaint
     {
 
         /// <summary>
-        /// Initialize color and shape display fields
-        /// </summary>
-        new protected void Start()
-        {
-
-            base.Start();
-
-            GameObject colorDisplay = GameObject.Find("BrushColor");
-            if (colorDisplay != null)
-            {
-                colorDisplayRenderer = colorDisplay.GetComponent<Renderer>();
-            }
-            GameObject shapeDisplay = GameObject.Find("BrushShape");
-            if (shapeDisplay != null)
-            {
-                shapeDisplayRenderer = shapeDisplay.GetComponent<Renderer>();
-                shapeDisplayInitScale = shapeDisplay.transform.localScale;
-            }
-
-            ApplyBrushSettings();
-        }
-
-        /// <summary>
         /// React to mouse input
         /// </summary>
-        protected void Update()
+        override protected void UpdateBrush()
         {
 
             UpdatePaintableCoords();
@@ -101,19 +78,19 @@ namespace InGamePaint
         {
             base.ApplyBrushSettings();
 
-            if (colorDisplayRenderer != null)
-            {
-                Texture2D tex = new Texture2D(1, 1);
-                tex.SetPixel(0, 0, color);
-                tex.Apply();
-                colorDisplayRenderer.material.mainTexture = tex;
+            //if (colorDisplayRenderer != null)
+            //{
+            //    Texture2D tex = new Texture2D(1, 1);
+            //    tex.SetPixel(0, 0, color);
+            //    tex.Apply();
+            //    colorDisplayRenderer.material.mainTexture = tex;
 
-            }
-            if (shapeDisplayRenderer != null)
-            {
-                shapeDisplayRenderer.material.mainTexture = brushTip;
-                shapeDisplayRenderer.transform.localScale = DynamicBrushSize * shapeDisplayInitScale / 128;
-            }
+            //}
+            //if (shapeDisplayRenderer != null)
+            //{
+            //    shapeDisplayRenderer.material.mainTexture = brushTip;
+            //    shapeDisplayRenderer.transform.localScale = DynamicBrushSize * shapeDisplayInitScale / 128;
+            //}
         }
 
         /// <summary>

@@ -25,7 +25,6 @@ namespace InGamePaint
         protected override void Awake()
         {
             // we won't call base.Awake() because we don't want VRTK_InteractableObject to initialize with a rigidbody
-            base.Start();
             isGrabbable = true;
             RemovedColliders = new Stack<GameObject>();
         }

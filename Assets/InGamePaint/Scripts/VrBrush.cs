@@ -59,14 +59,14 @@ namespace InGamePaint
             }
 
             //Setup controller event listeners
-            GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
+            //GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
             //GetComponent<VRTK_ControllerEvents>().TriggerAxisChanged += new ControllerInteractionEventHandler(TriggerChanged);
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.SetPositions(new Vector3[] { Vector3.zero, GetRay().direction * RayDistance });
             lineRenderer.startWidth = 0.05f;
             lineRenderer.endWidth = 0;
             lineRenderer.useWorldSpace = false;
-            lineRenderer.material = new Material(Shader.Find("Unlit/Color"));
+            lineRenderer.material = new Material(Shader.Find("Unlit/TransparentColor"));
             lineRenderer.material.color = BrushColor;
 
             ApplyBrushSettings();
@@ -76,7 +76,7 @@ namespace InGamePaint
         /// <summary>
         /// React to controller input
         /// </summary>
-        protected void Update()
+        override protected void UpdateBrush()
         {
 
             UpdatePaintableCoords();
@@ -86,11 +86,16 @@ namespace InGamePaint
                 float pulseStrength = (1 - currentPaintableDistance / RayDistance) * maxPulseStrength;
                 GetComponent<VRTK_ControllerActions>().TriggerHapticPulse((ushort)pulseStrength);
                 //BrushOpacity = buttonPressure;
+                if (lastPaintable == null)
+                {
+                    UpdateBrushTextureToSize();
+                }
                 Paint();
             }
             if (currentClickable != null)
             {
                 ClickClickable();
+                GetComponent<VRTK_ControllerActions>().TriggerHapticPulse((ushort)maxPulseStrength);
             }
 
         }
@@ -101,7 +106,7 @@ namespace InGamePaint
         override protected void ApplyBrushSettings()
         {
             base.ApplyBrushSettings();
-            lineRenderer.material.color = BrushColor;
+            lineRenderer.material.color = color;
         }
 
         /// <summary>
@@ -130,14 +135,14 @@ namespace InGamePaint
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TouchpadPressed(object sender, ControllerInteractionEventArgs e)
-        {
-            if (currentPaintable != null)
-            {
-                BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1);
-                ApplyBrushSettings();
-            }
-        }
+        //private void TouchpadPressed(object sender, ControllerInteractionEventArgs e)
+        //{
+        //    if (currentPaintable != null)
+        //    {
+        //        BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1);
+        //        ApplyBrushSettings();
+        //    }
+        //}
 
         //private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
         //{

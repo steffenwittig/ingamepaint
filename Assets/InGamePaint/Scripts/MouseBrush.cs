@@ -10,12 +10,12 @@ namespace InGamePaint
     {
 
         /// <summary>
-        /// React to mouse input
+        /// Toggle help display on or off
         /// </summary>
-        override protected void UpdateBrush()
-        {
+        public bool showHelp = true;
 
-            UpdatePaintableCoords();
+        override protected void HandleInput()
+        {
 
             if (currentPaintable != null)
             {
@@ -31,7 +31,7 @@ namespace InGamePaint
                 if (Input.GetMouseButtonDown(1))
                 {
                     // Rick click
-                    AddColor(currentPaintable.PickColor(currentPaintableCoords, 1), 1f, false);
+                    MixColor(currentPaintable.PickColor(currentPaintableCoords, 1), 1f, false);
                 }
 
             }
@@ -56,10 +56,15 @@ namespace InGamePaint
                     MaxBrushSize += Mathf.RoundToInt(scroll*25);
                 }
             }
+
+            if (Input.GetKeyDown(KeyCode.H))
+            {
+                showHelp = !showHelp;
+            }
         }
 
         /// <summary>
-        /// Show help
+        /// Shows help
         /// </summary>
         protected void OnGUI()
         {
@@ -67,35 +72,10 @@ namespace InGamePaint
             {
                 GUI.Label(
                     new Rect(0, 0, Screen.width, Screen.height),
-                    "InGamePaint Mouse Brush:\nH: Toggle this help\nLeft-Click: Paint, pick brush or color preset\nRight-Click: Pick color from canvas\nMouse-Wheel: Adjust brush size\nMouse-Wheel+Shift:Adjust brush opacity\nS: Save");
+                    "InGamePaint Mouse Brush:\nH: Show/Hide this help\nLeft-Click: Paint, pick brush or color preset\nRight-Click: Pick color from canvas\nMouse-Wheel: Adjust brush size\nMouse-Wheel+Shift:Adjust brush opacity\nS: Save");
             }
         }
 
-        /// <summary>
-        /// Update color and shape display fields
-        /// </summary>
-        override protected void ApplyBrushSettings()
-        {
-            base.ApplyBrushSettings();
-
-            //if (colorDisplayRenderer != null)
-            //{
-            //    Texture2D tex = new Texture2D(1, 1);
-            //    tex.SetPixel(0, 0, color);
-            //    tex.Apply();
-            //    colorDisplayRenderer.material.mainTexture = tex;
-
-            //}
-            //if (shapeDisplayRenderer != null)
-            //{
-            //    shapeDisplayRenderer.material.mainTexture = brushTip;
-            //    shapeDisplayRenderer.transform.localScale = DynamicBrushSize * shapeDisplayInitScale / 128;
-            //}
-        }
-
-        /// <summary>
-        /// Return ray distance
-        /// </summary>
         protected override float RayDistance
         {
             get
@@ -104,10 +84,6 @@ namespace InGamePaint
             }
         }
 
-        /// <summary>
-        /// Return the position of the cursor as a Ray
-        /// </summary>
-        /// <returns></returns>
         override protected Ray GetRay()
         {
             return Camera.main.ScreenPointToRay(Input.mousePosition);

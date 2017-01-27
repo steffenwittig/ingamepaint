@@ -2,34 +2,116 @@
 
 namespace InGamePaint
 {
+    /// <summary>
+    /// Abstract class to paint brush tip textures in a specified color on a Paintable's texture
+    /// </summary>
     public abstract class Brush : MonoBehaviour
     {
 
         /// <summary>
-        /// Alpha texture of the brush
+        /// Alpha texture (shape) of the brush
         /// </summary>
         public Texture2D brushTip;
-        public float opacityFade = 0.1f, smudgeStrength = 0.2f, brushSpacing = 0.4f;
-        public int brushSize;
-
-        protected float currentPaintableDistance, timeSinceLastUpdate, updateFrequency = 1f / 60f;
-        protected Color color = Color.black;
-        protected Texture2D brushAlphaOriginal;
-        protected Paintable currentPaintable, lastPaintable;
-        protected Clickable currentClickable;
-        protected Vector2 currentPaintableCoords, lastPaintableCoords;
-        protected Vector3 shapeDisplayInitScale;
-        protected Renderer colorDisplayRenderer, shapeDisplayRenderer;
-        protected bool paintedLastFrame = false, showHelp = true;
 
         /// <summary>
-        /// Initialize brush textures
+        /// Specifies how much the alpha color of the brush should be reduced while painting
+        /// </summary>
+        public float opacityFade = 0f;
+
+        /// <summary>
+        /// Specified how much of the Paintable color should be added to the brush color while painting
+        /// </summary>
+        public float smudgeStrength = 0f;
+
+        /// <summary>
+        /// Specifies how many brush tips should be placed on a line drawn between two frames
+        /// </summary>
+        public float brushSpacing = 0.5f;
+
+        /// <summary>
+        /// Specifies the size of the brush in pixels
+        /// </summary>
+        public int brushSize;
+
+        /// <summary>
+        /// Distance of the brush's origin to the paintable, that the brush currently points at
+        /// </summary>
+        protected float currentPaintableDistance;
+
+        /// <summary>
+        /// Time passed since UpdateBrush() was called
+        /// </summary>
+        protected float timeSinceLastUpdate;
+
+        /// <summary>
+        /// Time between calls to UpdateBrush()
+        /// </summary>
+        protected float updateFrequency = 1f / 90f;
+
+        /// <summary>
+        /// RGBA color of the brush
+        /// </summary>
+        protected Color color = Color.black;
+
+        /// <summary>
+        /// Original alpha texture before scaling it to the brush's size
+        /// </summary>
+        protected Texture2D brushAlphaOriginal;
+
+        /// <summary>
+        /// Paintable at which the brush currently points at
+        /// </summary>
+        protected Paintable currentPaintable;
+
+        /// <summary>
+        /// Paintable at which the brush pointed last frame
+        /// </summary>
+        protected Paintable lastPaintable;
+
+        /// <summary>
+        /// Clickable at which the brush currently points at
+        /// </summary>
+        protected Clickable currentClickable;
+
+        /// <summary>
+        /// Coordinates of the Paintable's texture the brush currently points at
+        /// </summary>
+        protected Vector2 currentPaintableCoords;
+
+        /// <summary>
+        /// Coordinates of the Paintable's texture the brush painted on last frame
+        /// </summary>
+        protected Vector2 lastPaintableCoords;
+
+        /// <summary>
+        /// Initial object scale of the shape display object
+        /// </summary>
+        protected Vector3 shapeDisplayInitScale;
+
+        /// <summary>
+        /// Renderer of the object named "BrushColor" which will be used to display the current color of the brush
+        /// </summary>
+        protected Renderer colorDisplayRenderer;
+
+        /// <summary>
+        /// Renderer for the objects named "BrushShape" which will be used to display the current texture of the brush and will be scaled according to the brush's size
+        /// </summary>
+        protected Renderer shapeDisplayRenderer;
+
+        /// <summary>
+        /// Did the brush paint last frame?
+        /// </summary>
+        protected bool paintedLastFrame = false;
+
+        /// <summary>
+        /// Initialize internal values and link BrushColor and BrushShape objects for live updates
         /// </summary>
         protected virtual void Start()
         {
+
             if (brushTip == null)
             {
-                brushTip = new Texture2D(2, 2); // 1x1 pixel texture causes errors in TextureScale
+                brushTip = new Texture2D(2, 2); // 1x1 pixel texture would cause errors in TextureScale
                 brushTip.SetPixels(new Color[] { color, color, color, color });
             }
 
@@ -50,6 +132,9 @@ namespace InGamePaint
             ApplyBrushSettings();
         }
 
+        /// <summary>
+        /// Update internal values after brush parameters changed
+        /// </summary>
         virtual protected void ApplyBrushSettings()
         {
             UpdateBrushTextureToSize();
@@ -69,6 +154,9 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Update brush tip texture to new size
+        /// </summary>
         protected void UpdateBrushTextureToSize()
         {
             // Clone and scale texture
@@ -81,7 +169,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Set the paintable object and UV coordinates
+        /// Detect, if the brush points at a paintable and set internal values (coordinates, distance, etc.)
         /// </summary>
         protected void UpdatePaintableCoords()
         {
@@ -148,7 +236,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a texture at the current UV coordinates on a paintable
+        /// Paints a texture at the current UV coordinates on the current Paintable
         /// </summary>
         protected void PaintTexture()
         {
@@ -156,7 +244,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a texture at the specified coordinates on a paintable
+        /// Paint a texture at the specified coordinates on the current Paintable
         /// </summary>
         /// <param name="coords"></param>
         protected void PaintTexture(Vector2 coords)
@@ -173,7 +261,7 @@ namespace InGamePaint
                 // apply brush tip to canvas texture
                 currentPaintable.PaintTexture(coords, brushTip, color);
                 // mix previous color into brush color
-                AddColor(previousColor, smudgeFactor, true);
+                MixColor(previousColor, smudgeFactor, true);
             } else
             {
                 currentPaintable.PaintTexture(coords, brushTip, color);
@@ -183,10 +271,16 @@ namespace InGamePaint
             BrushOpacity -= opacityFade/250;
         }
 
-        protected void AddColor(Color addColor, float intensity, bool ignoreOpacity)
+        /// <summary>
+        /// Add mixColor to the current brush's color
+        /// </summary>
+        /// <param name="mixColor">Color to mix with the brush's color</param>
+        /// <param name="mixValue">Specify from 0f to 1f how the colors should be mixed (0f: don't mix at all, 0.5f: equal mix, 1: replace brush's color) </param>
+        /// <param name="ignoreOpacity">Don't change the alpha value of the brush's color</param>
+        protected void MixColor(Color mixColor, float mixValue, bool ignoreOpacity)
         {
             float alpha = color.a;
-            color = Color.Lerp(color, addColor, Mathf.Min(1,Mathf.Max(0, intensity)));
+            color = Color.Lerp(color, mixColor, Mathf.Min(1,Mathf.Max(0, mixValue)));
             if (ignoreOpacity)
             {
                 color.a = alpha;
@@ -194,6 +288,10 @@ namespace InGamePaint
             ApplyBrushSettings();
         }
 
+        /// <summary>
+        /// Apply values of the given preset
+        /// </summary>
+        /// <param name="preset">The brush preset</param>
         protected void ApplyPreset(BrushPreset preset)
         {
             //brushSize = preset.brushSize;
@@ -204,17 +302,20 @@ namespace InGamePaint
             ApplyBrushSettings();
         }
 
+        /// <summary>
+        /// Execute clickable logic
+        /// </summary>
         protected void ClickClickable()
         {
             switch (currentClickable.GetType().ToString())
             {
                 case "InGamePaint.BrushPreset": ApplyPreset((BrushPreset)currentClickable); break;
-                case "InGamePaint.ColorPreset": AddColor(((ColorPreset)currentClickable).color, 1f, false); break;
+                case "InGamePaint.ColorPreset": MixColor(((ColorPreset)currentClickable).color, 1f, false); break;
             }
         }
 
         /// <summary>
-        /// The color that the brush will apply on paintables
+        /// Get or set the color that the brush will apply on paintables
         /// </summary>
         public Color BrushColor
         {
@@ -234,7 +335,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// The opacity of the brush color
+        /// Get or set the opacity of the brush's color
         /// </summary>
         public float BrushOpacity
         {
@@ -250,7 +351,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Set size of the brush in pixels
+        /// Get or set the size of the brush in pixels
         /// </summary>
         public int MaxBrushSize
         {
@@ -266,7 +367,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Get the size of the brush in pixels, can be overridden in child classes
+        /// Get the size of the brush in pixels; Can be overridden in child classes
         /// to return dynamic brush sizes
         /// </summary>
         virtual public int DynamicBrushSize
@@ -286,20 +387,27 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Returns a ray, depending on the nature of the brush
+        /// Returns a ray to detect where the brush points at on a paintable
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A ray to use for collision detection</returns>
         abstract protected Ray GetRay();
 
-        abstract protected void UpdateBrush();
+        /// <summary>
+        /// React to input
+        /// </summary>
+        abstract protected void HandleInput();
 
+        /// <summary>
+        /// Runs logic every frame (restricted by updateFrequency)
+        /// </summary>
         protected void Update()
         {
             timeSinceLastUpdate += Time.deltaTime;
 
             if (timeSinceLastUpdate > updateFrequency)
             {
-                UpdateBrush();
+                UpdatePaintableCoords();
+                HandleInput();
                 timeSinceLastUpdate = 0;
             }
         }

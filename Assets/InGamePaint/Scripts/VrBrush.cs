@@ -14,10 +14,6 @@ namespace InGamePaint
     public class VrBrush : Brush
     {
 
-        /// <summary>
-        /// Size of the brush in pixels
-        /// </summary>
-        protected int paintBrushSize;
             
         /// <summary>
         /// Strength of the vibration
@@ -29,11 +25,6 @@ namespace InGamePaint
         /// </summary>
         protected LineRenderer lineRenderer;
 
-        private float buttonPressure;
-
-        /// <summary>
-        /// Return brush size based on distance to the paintable
-        /// </summary>
         override public int DynamicBrushSize
         {
             get
@@ -42,9 +33,6 @@ namespace InGamePaint
             }
         }
 
-        /// <summary>
-        /// Set brush size, initialize lineRenderer
-        /// </summary>
         new protected void Start()
         {
 
@@ -58,9 +46,6 @@ namespace InGamePaint
                 return;
             }
 
-            //Setup controller event listeners
-            //GetComponent<VRTK_ControllerEvents>().TouchpadPressed += new ControllerInteractionEventHandler(TouchpadPressed);
-            //GetComponent<VRTK_ControllerEvents>().TriggerAxisChanged += new ControllerInteractionEventHandler(TriggerChanged);
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.SetPositions(new Vector3[] { Vector3.zero, GetRay().direction * RayDistance });
             lineRenderer.startWidth = 0.05f;
@@ -73,13 +58,8 @@ namespace InGamePaint
 
         }
 
-        /// <summary>
-        /// React to controller input
-        /// </summary>
-        override protected void UpdateBrush()
+        override protected void HandleInput()
         {
-
-            UpdatePaintableCoords();
 
             if (/*buttonPressure >= 0.1f && */currentPaintable != null)
             {
@@ -109,9 +89,6 @@ namespace InGamePaint
             lineRenderer.material.color = color;
         }
 
-        /// <summary>
-        /// Return max ray distance
-        /// </summary>
         protected override float RayDistance
         {
             get
@@ -120,34 +97,11 @@ namespace InGamePaint
             }
         }
 
-        /// <summary>
-        /// Returns ray depending on the orientation of the controller
-        /// </summary>
-        /// <returns></returns>
         override protected Ray GetRay()
         {
             GameObject source = GameObject.Find("Model");
             return new Ray(source.transform.position, -source.transform.up);
         }
-
-        /// <summary>
-        /// Pick color if controller is aimed at a Paintable and touchpad is pressed
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        //private void TouchpadPressed(object sender, ControllerInteractionEventArgs e)
-        //{
-        //    if (currentPaintable != null)
-        //    {
-        //        BrushColor = currentPaintable.PickColor(currentPaintableCoords, 1);
-        //        ApplyBrushSettings();
-        //    }
-        //}
-
-        //private void TriggerChanged(object sender, ControllerInteractionEventArgs e)
-        //{
-        //    buttonPressure = e.buttonPressure;
-        //}
 
     }
 }

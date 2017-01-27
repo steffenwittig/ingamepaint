@@ -45,8 +45,19 @@ namespace InGamePaint
         /// </summary>
         public bool locked = false;
 
-        protected bool changed, hasUnsavedChanges;
+        /// <summary>
+        /// Was the texture changed last frame?
+        /// </summary>
+        protected bool changed;
 
+        /// <summary>
+        /// Was the texture changed since it was last saved?
+        /// </summary>
+        protected bool hasUnsavedChanges;
+
+        /// <summary>
+        /// Was the texture changed since it was last saved?
+        /// </summary>
         public bool HasUnsavedChanges
         {
             get
@@ -55,10 +66,13 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Texture of the paintable
+        /// </summary>
         protected Texture2D texture;
 
         /// <summary>
-        /// Initialize texture to paint on and set it as main texture
+        /// Initialize texture to paint on and set it as main texture, add MeshCollider and initialize internal values
         /// </summary>
         protected void Start()
         {
@@ -86,7 +100,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Updates the texture on the object
+        /// Updates the texture on the object if it was changed
         /// </summary>
         protected void Update()
         {
@@ -98,7 +112,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a single pixel
+        /// Paint a single pixel at the specified coordinates with the given color
         /// </summary>
         /// <param name="x">X coordinate on the paintable texture</param>
         /// <param name="y">Y coordinate on the paintable texture</param>
@@ -114,9 +128,9 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Paint a single pixel
+        /// Paint a single pixel at the specified coordinates with the given color
         /// </summary>
-        /// <param name="coords"></param>
+        /// <param name="coords">X and Y coordinates on the paintable texture</param>
         /// <param name="color">Color of the pixel</param>
         public void PaintPixel(Vector2 coords, Color color)
         {
@@ -201,7 +215,7 @@ namespace InGamePaint
         /// <summary>
         /// Paint a texture with specific alpha and color components
         /// </summary>
-        /// <param name="coordsCenter">UV coordinates of the center point of the texture on the Paintable</param>
+        /// <param name="coordsCenter">X and Y coordinates of the center point of the texture on the Paintable</param>
         /// <param name="alphaTexture">Alpha component of the texture</param>
         /// <param name="colorTexture">Color component of the texture</param>
         public void PaintTexture(Vector2 coordsCenter, Texture2D alphaTexture, Color color)
@@ -210,7 +224,7 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Fill whole texture with solid color
+        /// Replace all pixels of the texture with given color
         /// </summary>
         /// <param name="color">Texture will be filled with this color</param>
         public void Clear(Color color)
@@ -231,10 +245,10 @@ namespace InGamePaint
         }
 
         /// <summary>
-        /// Pick color in specified radius. If radius is larger than 1 pixel, an average color of all pixels will be picked
+        /// Pick color in specified radius. If radius is larger than 1 pixel, an average color of all pixels in the square will be picked
         /// </summary>
-        /// <param name="coordsCenter">Center of the color picking radius</param>
-        /// <param name="radius">Not yet implemented</param>
+        /// <param name="coordsCenter">Center of the color picking area</param>
+        /// <param name="radius">Actually the width and height of a square, not a radius - defines the area to sample the average color</param>
         /// <returns></returns>
         public Color PickColor(Vector2 coordsCenter, int radius)
         {
@@ -273,11 +287,20 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Transforms UV coordinates to XY texture coordinates
+        /// </summary>
+        /// <param name="uvCoords">UV coordinates</param>
+        /// <returns>XY texture coordinate</returns>
         public Vector2 Uv2Pixel(Vector2 uvCoords)
         {
             return new Vector2(uvCoords.x * resolutionX, uvCoords.y * resolutionY);
         }
 
+        /// <summary>
+        /// Saves the texture to a file
+        /// </summary>
+        /// <returns>Filename with path</returns>
         public string SaveToFile()
         {
             string path = Application.persistentDataPath + "/" + name + "_" + DateTime.Now.ToString("MM-dd-yyyy-hh-mm") + ".png";

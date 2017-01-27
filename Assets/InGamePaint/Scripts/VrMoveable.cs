@@ -11,9 +11,19 @@ namespace InGamePaint
     public class VrMoveable : VRTK_InteractableObject
     {
 
+        /// <summary>
+        /// Is the rigidbody intially set to be kinematic?
+        /// </summary>
         protected bool initialIsKinematic = false;
+
+        /// <summary>
+        /// Removed colliders, stored to be added after dropping the Moveable
+        /// </summary>
         protected Stack<GameObject> RemovedColliders;
 
+        /// <summary>
+        /// Get the rigidbody
+        /// </summary>
         protected Rigidbody MoveableRigidbody
         {
             get
@@ -22,6 +32,9 @@ namespace InGamePaint
             }
         }
 
+        /// <summary>
+        /// Override VRTK_InteractableObject.Awake() and set isGrabbable to true
+        /// </summary>
         protected override void Awake()
         {
             // we won't call base.Awake() because we don't want VRTK_InteractableObject to initialize with a rigidbody
@@ -29,6 +42,9 @@ namespace InGamePaint
             RemovedColliders = new Stack<GameObject>();
         }
 
+        /// <summary>
+        /// Handle grabbing interaction
+        /// </summary>
         protected override void Update()
         {
 

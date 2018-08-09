@@ -1,8 +1,8 @@
 # InGamePaint
 
-This is a simple 3D painting application, focused on VR painting with the HTC Vive Hedset.
+This is a simple 3D painting application, focused on VR painting with the HTC Vive Headset.
 
-The project is currently being developed as a project at Reutlingen University and is in an early state. It can be controlled via mouse input (MouseBrush.cs) or via an HTC Vive controller (VrBrush.cs).
+The project was developed as a project at Reutlingen University and is in an early state. It can be controlled via mouse input (MouseBrush.cs) or via an HTC Vive controller (VrBrush.cs).
 
 VR-Demonstration:
 - [https://youtu.be/uFFpBnFXw7s](https://youtu.be/uFFpBnFXw7s)
